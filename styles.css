@@ -1270,3 +1270,44 @@ body {
     font-size: 20px;
   }
 }
+
+/* Compact menu and stable full-frame play areas */
+.game-menu {
+  width: min(360px, 56vw);
+}
+
+.game-mode .stage {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.menu-button {
+  min-height: 52px;
+}
+
+.game-mode .message {
+  margin-top: 86px;
+}
+
+.game-mode[data-game="mines"] .game-area {
+  align-content: start;
+  align-self: stretch;
+  padding-top: 8px;
+}
+
+.game-mode[data-game="breakout"] .game-area {
+  align-content: stretch;
+  align-self: stretch;
+  padding: 6px;
+}
+
+.game-mode[data-game="breakout"] .canvas-wrap {
+  align-self: stretch;
+  height: 100%;
+}
+
+.game-mode[data-game="breakout"] canvas {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-radius: 18px;
+}

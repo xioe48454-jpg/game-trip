@@ -185,7 +185,7 @@ function renderDifficulty() {
     game2048: () => numberField("\u5f00\u5c40", "start", 2, 6) + selectField("\u76ee\u6807", "goal", [[512, "512"], [1024, "1024"], [2048, "2048"], [4096, "4096"]]),
     memory: () => numberField("\u5bf9\u5b50", "pairs", 4, 18) + selectField("\u9884\u89c8", "peek", [[0, "\u5173\u95ed"], [2, "2 \u79d2"], [4, "4 \u79d2"]]),
     pong: () => rangeField("\u901f\u5ea6", "speed", 0.8, 3, 0.2) + characterSelectField("\u5bf9\u624b", "rival"),
-    breakout: () => numberField("\u884c\u6570", "rows", 3, 8) + rangeField("\u901f\u5ea6", "speed", 0.8, 2.5, 0.1),
+    breakout: () => numberField("\u884c\u6570", "rows", 3, 10) + rangeField("\u901f\u5ea6", "speed", 0.8, 2.5, 0.1),
   };
   difficultyPanel.innerHTML = panels[id]();
 }
