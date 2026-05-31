@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>三丽鸥游戏之旅</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <button id="menuToggle" class="menu-toggle" type="button" title="游戏菜单">菜单</button>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <aside id="drawer" class="drawer" aria-label="游戏菜单">
+      <div class="brand">
+        <div>
+          <h1>三丽鸥游戏之旅</h1>
+          <p>先选游戏，进去后选角色和难度</p>
+        </div>
+      </div>
+      <nav id="gameMenu" class="game-menu"></nav>
+    </aside>
+
+    <main class="stage">
+      <section class="hero">
+        <div class="cloud cloud-a">凯蒂猫</div>
+        <div class="cloud cloud-b">美乐蒂</div>
+        <div class="cloud cloud-c">大耳狗</div>
+      </section>
+
+      <header class="topbar">
+        <div>
+          <p id="gameKicker" class="kicker">CLASSIC</p>
+          <h2 id="gameTitle">扫雷</h2>
+        </div>
+        <div class="toolbar">
+          <div id="scoreBox" class="score-box">分数 0</div>
+          <button id="settingsToggle" class="primary-button ghost-button" type="button">角色</button>
+          <button id="difficultyToggle" class="primary-button ghost-button" type="button">难度</button>
+          <button id="backBtn" class="primary-button ghost-button" type="button">换游戏</button>
+          <button id="helpBtn" class="icon-button" type="button" title="玩法">?</button>
+          <button id="resetBtn" class="primary-button" type="button">重开</button>
+        </div>
+      </header>
+
+      <section id="characterSettings" class="settings settings-characters">
+        <h3>角色</h3>
+        <div id="characterPicker" class="character-picker"></div>
+      </section>
+
+      <section id="difficultySettings" class="settings settings-difficulty">
+        <h3>难度</h3>
+        <div id="difficultyPanel" class="difficulty-panel"></div>
+      </section>
+
+      <div id="message" class="message" role="status"></div>
+      <section id="gameArea" class="game-area" tabindex="0" aria-label="游戏区域"></section>
+    </main>
+
+    <div id="helpDialog" class="dialog" hidden>
+      <div class="dialog-panel">
+        <button id="closeHelpBtn" class="icon-button close-button" type="button" title="关闭">×</button>
+        <h3 id="helpTitle">玩法</h3>
+        <p id="helpText"></p>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
