@@ -257,6 +257,8 @@ function runMines() {
   const mines = new Set();
   while (mines.size < mineCount) mines.add(rand(total));
   const revealed = new Set();
+  const flagged = new Set();
+  const clickTimers = new Map();
   const board = makeBoard(size, size);
   const zoomBar = document.createElement("div");
   zoomBar.className = "zoom-bar";
@@ -269,7 +271,10 @@ function runMines() {
     cellSize = Math.max(20, Math.min(58, cellSize + Number(button.dataset.zoom) * 4));
     cells.forEach((cell) => cell.style.width = cell.style.height = `${cellSize}px`);
   });
-  cleanup = () => zoomBar.remove();
+  cleanup = () => {
+    zoomBar.remove();
+    clickTimers.forEach((timer) => clearTimeout(timer));
+  };
   const char = character();
   setScore(`雷 ${mineCount}`);
   setMessage(`避开 ${char.name} 徽章雷，翻开 ${total - mineCount} 个安全格。`);
@@ -294,8 +299,8 @@ function runMines() {
     cell.className = "cell";
     cell.type = "button";
     if (size > 22) cell.style.width = cell.style.height = "28px";
-    cell.addEventListener("click", () => {
-      if (revealed.has(index)) return;
+    const reveal = () => {
+      if (revealed.has(index) || flagged.has(index)) return;
       if (mines.has(index)) {
         cell.innerHTML = badge(char, "mine-symbol");
         cell.classList.add("hit");
@@ -311,7 +316,7 @@ function runMines() {
         const queue = [start];
         while (queue.length) {
           const current = queue.shift();
-          if (revealed.has(current) || mines.has(current)) continue;
+          if (revealed.has(current) || flagged.has(current) || mines.has(current)) continue;
           revealed.add(current);
           const currentCell = cells[current];
           const near = countNear(current);
@@ -334,6 +339,29 @@ function runMines() {
       revealFrom(index);
       setScore(`安全 ${revealed.size}/${total - mineCount}`);
       if (revealed.size === total - mineCount) recordResult(revealed.size, "清空成功");
+    };
+    cell.addEventListener("click", () => {
+      if (revealed.has(index) || clickTimers.has(index)) return;
+      clickTimers.set(index, setTimeout(() => {
+        clickTimers.delete(index);
+        reveal();
+      }, 220));
+    });
+    cell.addEventListener("dblclick", (event) => {
+      event.preventDefault();
+      const timer = clickTimers.get(index);
+      if (timer) clearTimeout(timer);
+      clickTimers.delete(index);
+      if (revealed.has(index)) return;
+      if (flagged.has(index)) {
+        flagged.delete(index);
+        cell.classList.remove("flagged");
+        cell.innerHTML = "";
+      } else {
+        flagged.add(index);
+        cell.classList.add("flagged");
+        cell.innerHTML = '<span class="cute-flag" aria-label="标记有雷">🎀</span>';
+      }
     });
     board.append(cell);
     return cell;
@@ -839,10 +867,10 @@ function runPong() {
 
 
 function runBreakout() {
-  const ctx = canvasGame();
+  const ctx = canvasGame(640, 760);
   const speed = settings.breakout.speed;
   let paddle = 270;
-  let ball = { x: 320, y: 320, vx: 4 * speed, vy: -4 * speed };
+  let ball = { x: 320, y: 520, vx: 4 * speed, vy: -4 * speed };
   let bricks = Array.from({ length: settings.breakout.rows * 8 }, (_, i) => ({ x: 22 + (i % 8) * 75, y: 38 + Math.floor(i / 8) * 30, alive: true, char: characters[i % characters.length] }));
   let score = 0;
   const char = character();
@@ -865,7 +893,7 @@ function runBreakout() {
     ball.y += ball.vy;
     if (ball.x < 12 || ball.x > 628) ball.vx *= -1;
     if (ball.y < 12) ball.vy *= -1;
-    if (ball.y > 360 && ball.x > paddle && ball.x < paddle + 104 && ball.vy > 0) ball.vy *= -1;
+    if (ball.y > 690 && ball.x > paddle && ball.x < paddle + 104 && ball.vy > 0) ball.vy *= -1;
     bricks.forEach((brick) => {
       if (brick.alive && ball.x > brick.x && ball.x < brick.x + 58 && ball.y > brick.y && ball.y < brick.y + 20) {
         brick.alive = false;
@@ -879,21 +907,21 @@ function runBreakout() {
       recordResult(score, "礼物砖块清空");
       clearInterval(timer);
     }
-    if (ball.y > 430) {
+    if (ball.y > 770) {
       setMessage("球掉出去了，按重开再来。");
       recordResult(score, "球掉出去了");
       clearInterval(timer);
     }
-    ctx.clearRect(0, 0, 640, 420);
+    ctx.clearRect(0, 0, 640, 760);
     ctx.fillStyle = "#fff4fb";
-    ctx.fillRect(0, 0, 640, 420);
+    ctx.fillRect(0, 0, 640, 760);
     bricks.forEach((brick) => {
       if (!brick.alive) return;
       ctx.fillStyle = brick.char.color;
       ctx.fillRect(brick.x, brick.y, 58, 20);
     });
     ctx.fillStyle = "#89cdf8";
-    ctx.fillRect(paddle, 382, 104, 16);
+    ctx.fillRect(paddle, 710, 104, 16);
     drawBadgeCanvas(ctx, char, ball.x, ball.y, 12);
   }, 16);
   setMessage(`${settings.breakout.rows} 行砖块，速度 ${speed}x。`);

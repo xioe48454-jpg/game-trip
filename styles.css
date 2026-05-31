@@ -431,6 +431,20 @@ select {
   background: var(--pink-dark);
 }
 
+.cell.flagged {
+  border-color: #ff8fc6;
+  background: #fff0f8;
+}
+
+.cute-flag {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 20px;
+  line-height: 1;
+}
+
 .cell.empty {
   background: #eef9ff;
   box-shadow: inset 0 0 0 2px #d8f0ff;
@@ -1273,7 +1287,7 @@ body {
 
 /* Compact menu and stable full-frame play areas */
 .game-menu {
-  width: min(360px, 56vw);
+  width: min(480px, 76vw);
 }
 
 .game-mode .stage {
@@ -1295,19 +1309,22 @@ body {
 }
 
 .game-mode[data-game="breakout"] .game-area {
-  align-content: stretch;
+  align-content: center;
   align-self: stretch;
   padding: 6px;
+  background: #fff4fb;
 }
 
 .game-mode[data-game="breakout"] .canvas-wrap {
-  align-self: stretch;
+  align-self: center;
   height: 100%;
+  place-items: center;
 }
 
 .game-mode[data-game="breakout"] canvas {
   width: 100%;
-  height: 100%;
-  max-height: none;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 640 / 760;
   border-radius: 18px;
 }
