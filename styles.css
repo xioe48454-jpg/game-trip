@@ -453,11 +453,12 @@ select {
 }
 
 .cute-flag {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mine-icon-size, 22px);
+  height: var(--mine-icon-size, 22px);
+  font-size: var(--mine-icon-size, 22px);
   line-height: 1;
 }
 
@@ -487,8 +488,8 @@ select {
 .game-mode[data-game="mines"] .mine-symbol,
 .game-mode[data-game="mines"] .player-symbol,
 .game-mode[data-game="mines"] .food-symbol {
-  width: 70%;
-  height: 70%;
+  width: var(--mine-icon-size, 22px);
+  height: var(--mine-icon-size, 22px);
 }
 
 .game2048-grid .cell {
