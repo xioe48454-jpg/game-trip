@@ -392,6 +392,7 @@ select {
   padding: 22px;
   outline: none;
   overflow: auto;
+  transition: opacity 200ms ease;
 }
 
 .board {
@@ -552,48 +553,6 @@ canvas {
 
 .memory-card {
   font-size: 22px;
-}
-
-.simon-pad {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(120px, 170px));
-  gap: 14px;
-}
-
-.simon-key {
-  aspect-ratio: 1;
-  border: 4px solid white;
-  border-radius: 28px;
-  cursor: pointer;
-  opacity: 0.75;
-  color: white;
-  font-weight: 900;
-  font-size: 18px;
-  box-shadow: var(--shadow);
-}
-
-.simon-key.lit {
-  opacity: 1;
-  filter: brightness(1.2);
-  transform: scale(1.04);
-}
-
-.typing-target {
-  max-width: 760px;
-  font-size: clamp(20px, 4vw, 34px);
-  line-height: 1.6;
-  text-align: center;
-  font-weight: 900;
-}
-
-.typed {
-  color: #55a788;
-}
-
-.current {
-  color: white;
-  background: var(--pink-dark);
-  border-radius: 8px;
 }
 
 .dialog {
@@ -794,12 +753,6 @@ body {
   height: 40px;
   border-radius: 50%;
   overflow: hidden;
-}
-
-.simon-face {
-  width: 76%;
-  height: 76%;
-  object-fit: contain;
 }
 
 .ghost-button {
@@ -1054,54 +1007,15 @@ body {
   box-shadow: var(--shadow);
 }
 
-.snake-pad {
-  position: fixed;
-  z-index: 30;
-  left: 50%;
-  bottom: 96px;
-  display: grid;
-  grid-template-columns: repeat(3, 48px);
-  gap: 8px;
-  transform: translateX(-50%);
-}
-
-.snake-pad button {
-  width: 48px;
-  height: 48px;
-  border: 3px solid white;
-  border-radius: 16px;
-  background: rgba(232, 87, 155, 0.9);
-  color: white;
-  font-size: 22px;
-  font-weight: 900;
-  box-shadow: var(--shadow);
-}
-
-.snake-pad button:first-child,
-.snake-pad button:last-child {
-  grid-column: 2;
-}
-
-.spot-board .cell,
-.mole-board .cell {
-  width: 64px;
-  height: 64px;
-}
-
-.spot-card .player-symbol,
-.spot-card .mine-symbol,
-.spot-card .food-symbol {
-  width: 48px;
-  height: 48px;
-}
-
 @media (max-width: 520px) {
   .game-mode .topbar {
     left: 82px;
   }
 
   .game-mode .score-box {
-    display: none;
+    font-size: 13px;
+    min-width: 72px;
+    padding: 0 8px;
   }
 
   .game-mode .message {
@@ -1116,10 +1030,6 @@ body {
   .game-mode .memory-board .memory-card {
     width: clamp(56px, 17vw, 76px);
     height: clamp(56px, 17vw, 76px);
-  }
-
-  .snake-pad {
-    bottom: 92px;
   }
 
   canvas {
@@ -1232,11 +1142,6 @@ body {
   padding-top: 12vh;
 }
 
-/* Final mobile layout tuning */
-.game-menu {
-  width: min(520px, 88vw);
-}
-
 .menu-button {
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
@@ -1294,10 +1199,6 @@ body {
 
 .game-mode .stage {
   grid-template-rows: auto minmax(0, 1fr);
-}
-
-.menu-button {
-  min-height: 52px;
 }
 
 .game-mode .message {

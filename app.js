@@ -24,7 +24,8 @@ let cleanup = () => {};
 let currentCharacter = "kitty";
 let gameStarted = false;
 const settings = {};
-const records = JSON.parse(localStorage.getItem("gameKittyRecords") || "{}");
+let records = {};
+try { records = JSON.parse(localStorage.getItem("gameKittyRecords") || "{}"); } catch(e) {}
 
 const characters = [
   { id: "kitty", name: "\u51ef\u8482\u732b", color: "#ff7db7", accent: "#e9418b", img: "https://corporate.sanrio.co.jp/en/business-info/images/img_hello-kitty.png" },
@@ -136,13 +137,13 @@ function bindKey(handler) {
 }
 
 function badge(char = character(), className = "player-symbol") {
-  return `<span class="${className}" style="background:${char.color};box-shadow:inset 0 -3px 0 ${char.accent}"><img class="face" src="${char.img}" alt="${char.name}"></span>`;
+  return `<span class="${className}" style="background:${char.color};box-shadow:inset 0 -3px 0 ${char.accent}"><img class="face" src="${char.img}" alt="${char.name}" onerror="this.style.display='none'"></span>`;
 }
 
 function renderCharacters() {
   characterPicker.innerHTML = characters.map((char) => `
     <button class="character-button ${char.id === currentCharacter ? "active" : ""}" type="button" data-character="${char.id}">
-      <span class="avatar" style="background:${char.color};box-shadow:inset 0 -3px 0 ${char.accent}"><img class="face" src="${char.img}" alt="${char.name}"></span>
+      <span class="avatar" style="background:${char.color};box-shadow:inset 0 -3px 0 ${char.accent}"><img class="face" src="${char.img}" alt="${char.name}" onerror="this.style.display='none'"></span>
       <span>${char.name}</span>
     </button>
   `).join("");
@@ -194,6 +195,7 @@ function loadGame(id) {
   const game = games.find((item) => item.id === id);
   activeGame = game;
   document.body.dataset.game = id;
+  gameArea.style.opacity = "0";
   clearGame();
   title.textContent = game.name;
   kicker.textContent = `${game.tag.toUpperCase()} · ${character().name}`;
@@ -207,6 +209,7 @@ function loadGame(id) {
   gameStarted = true;
   closeDrawer();
   gameRunners[id]();
+  gameArea.style.opacity = "1";
 }
 
 menu.addEventListener("click", (event) => {
@@ -369,91 +372,6 @@ function runMines() {
     board.append(cell);
     return cell;
   });
-}
-
-function runSnake() {
-  const size = Math.max(12, Math.min(30, settings.snake.size));
-  const interval = Math.max(45, Math.round(180 / settings.snake.speed));
-  const board = makeBoard(size, size);
-  const cells = Array.from({ length: size * size }, () => {
-    const cell = document.createElement("div");
-    cell.className = "cell empty";
-    if (size > 22) cell.style.width = cell.style.height = "28px";
-    board.append(cell);
-    return cell;
-  });
-  let snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }];
-  let dir = { x: 1, y: 0 };
-  let nextDir = dir;
-  let food = { x: size - 4, y: 5 };
-  let score = 0;
-  let alive = true;
-  const char = character();
-  setMessage(`${char.name} 以 ${settings.snake.speed}x 速度移动。`);
-
-  const draw = () => {
-    cells.forEach((cell) => {
-      cell.className = "cell empty";
-      cell.innerHTML = "";
-    });
-    snake.forEach((part, i) => {
-      const cell = cells[part.y * size + part.x];
-      cell.className = i ? "cell dark" : "cell hit";
-      if (!i) cell.innerHTML = badge(char, "player-symbol");
-    });
-    cells[food.y * size + food.x].className = "cell revealed";
-    cells[food.y * size + food.x].innerHTML = badge(otherCharacter(), "food-symbol");
-  };
-  const placeFood = () => {
-    do food = { x: rand(size), y: rand(size) };
-    while (snake.some((part) => part.x === food.x && part.y === food.y));
-  };
-  const setDirection = (x, y) => {
-    if (x !== -dir.x || y !== -dir.y) nextDir = { x, y };
-  };
-  const keyCleanup = bindKey((event) => {
-    const map = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] };
-    if (!map[event.key]) return;
-    event.preventDefault();
-    const [x, y] = map[event.key];
-    setDirection(x, y);
-  });
-  const pad = document.createElement("div");
-  pad.className = "snake-pad";
-  pad.innerHTML = '<button data-dir="0,-1">↑</button><button data-dir="-1,0">←</button><button data-dir="1,0">→</button><button data-dir="0,1">↓</button>';
-  gameArea.append(pad);
-  pad.addEventListener("pointerdown", (event) => {
-    const button = event.target.closest("[data-dir]");
-    if (!button) return;
-    const [x, y] = button.dataset.dir.split(",").map(Number);
-    setDirection(x, y);
-  });
-  const timer = setInterval(() => {
-    if (!alive) return;
-    dir = nextDir;
-    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
-    const crash = head.x < 0 || head.x >= size || head.y < 0 || head.y >= size || snake.some((part) => part.x === head.x && part.y === head.y);
-    if (crash) {
-      alive = false;
-      setMessage("撞到了，按重开继续。");
-      recordResult(score, "撞到了");
-      return;
-    }
-    snake.unshift(head);
-    if (head.x === food.x && head.y === food.y) {
-      score += Math.round(10 * settings.snake.speed);
-      setScore(`分数 ${score}`);
-      placeFood();
-    } else {
-      snake.pop();
-    }
-    draw();
-  }, interval);
-  draw();
-  cleanup = () => {
-    clearInterval(timer);
-    keyCleanup();
-  };
 }
 
 function runGomoku() {
@@ -935,125 +853,6 @@ function runBreakout() {
     ctx.canvas.removeEventListener("pointermove", mouse);
     ctx.canvas.removeEventListener("touchmove", mouse);
   };
-}
-
-function runSimon() {
-  const total = Math.max(6, Math.min(24, settings.simon.cards));
-  const odd = characters[(characters.findIndex((c) => c.id === currentCharacter) + 1) % characters.length];
-  const normal = character();
-  const oddIndex = rand(total);
-  const cols = Math.ceil(Math.sqrt(total));
-  const board = makeBoard(Math.ceil(total / cols), cols, "spot-board");
-  Array.from({ length: total }, (_, i) => {
-    const cell = document.createElement("button");
-    cell.className = "cell revealed spot-card";
-    cell.type = "button";
-    cell.innerHTML = badge(i === oddIndex ? odd : normal);
-    cell.addEventListener("click", () => {
-      if (i === oddIndex) {
-        const score = total * 10;
-        setScore("?? " + score);
-        recordResult(score, "找到了不同角色");
-      } else {
-        recordResult(0, "点错了");
-      }
-      cell.classList.add("hit");
-      board.querySelectorAll("button").forEach((button) => button.disabled = true);
-    });
-    board.append(cell);
-  });
-  setMessage("找出唯一不同的角色，共 " + total + " 张。");
-}
-
-function runMole() {
-  const holes = Math.max(9, Math.min(36, settings.mole.holes));
-  const cols = Math.ceil(Math.sqrt(holes));
-  const board = makeBoard(Math.ceil(holes / cols), cols, "mole-board");
-  let active = -1;
-  let score = 0;
-  let time = settings.mole.time;
-  const char = character();
-  const cells = Array.from({ length: holes }, (_, i) => {
-    const cell = document.createElement("button");
-    cell.className = "cell empty";
-    cell.type = "button";
-    cell.addEventListener("click", () => {
-      if (i === active) {
-        score++;
-        setScore("?? " + score);
-        active = -1;
-        draw();
-      }
-    });
-    board.append(cell);
-    return cell;
-  });
-  const draw = () => {
-    cells.forEach((cell, i) => {
-      cell.innerHTML = i === active ? badge(char) : "";
-      cell.className = i === active ? "cell hit" : "cell empty";
-    });
-  };
-  const moleTimer = setInterval(() => { active = rand(holes); draw(); }, Number(settings.mole.speed));
-  const clock = setInterval(() => {
-    time--;
-    setMessage("剩余 " + time + " 秒｜坑数 " + holes);
-    if (time <= 0) {
-      clearInterval(moleTimer);
-      clearInterval(clock);
-      active = -1;
-      draw();
-      recordResult(score, "时间到");
-    }
-  }, 1000);
-  draw();
-  setMessage("剩余 " + time + " 秒，" + holes + " 个坑。");
-  cleanup = () => { clearInterval(moleTimer); clearInterval(clock); };
-}
-
-function runTyping() {
-  const ctx = canvasGame(640, 420);
-  let score = 0;
-  let holding = false;
-  let power = 0;
-  let player = { x: 141, y: 290 };
-  let current = { x: 90, y: 314, w: 104, h: 30 };
-  let next = { x: 334, y: 250, w: 96, h: 30 };
-  let jumping = false;
-  const char = character();
-  const scale = settings.typing.power;
-  const drawPlatform = (p, color) => { ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(p.x, p.y, p.w, p.h, 12); ctx.fill(); };
-  const draw = () => {
-    ctx.clearRect(0, 0, 640, 420);
-    ctx.fillStyle = "#fff4fb"; ctx.fillRect(0, 0, 640, 420);
-    drawPlatform(current, "#ff9fcf"); drawPlatform(next, "#89cdf8");
-    ctx.fillStyle = "#e8579b"; ctx.fillRect(44, 34, Math.min(220, power * 3.6), 14);
-    drawBadgeCanvas(ctx, char, player.x, player.y, 22);
-  };
-  const newNext = () => { current = next; player = { x: current.x + current.w / 2, y: current.y - 18 }; next = { x: 260 + rand(250), y: 170 + rand(130), w: 74 + rand(60), h: 30 }; };
-  const finishJump = () => {
-    const ok = player.x > next.x && player.x < next.x + next.w && Math.abs(player.y - (next.y - 18)) < 42;
-    if (ok) { score += 10; setScore("?? " + score); newNext(); draw(); }
-    else { recordResult(score, "跳空了"); }
-  };
-  const release = () => {
-    if (!holding || jumping) return;
-    holding = false; jumping = true;
-    const start = { ...player }; const dx = power * 2.25 * scale; const targetY = next.y - 18;
-    let frame = 0;
-    const timer = setInterval(() => {
-      frame++; const t = frame / 28;
-      player.x = start.x + dx * t;
-      player.y = start.y + (targetY - start.y) * t - Math.sin(Math.PI * t) * power * 0.9;
-      draw();
-      if (frame >= 28) { clearInterval(timer); jumping = false; power = 0; finishJump(); }
-    }, 16);
-  };
-  const press = (event) => { event.preventDefault(); if (!jumping) holding = true; };
-  const powerTimer = setInterval(() => { if (holding) { power = Math.min(62, power + 1.8); draw(); } }, 16);
-  ctx.canvas.addEventListener("pointerdown", press); window.addEventListener("pointerup", release);
-  setMessage("按住画面蓄力，松开跳到蓝色平台。"); draw();
-  cleanup = () => { clearInterval(powerTimer); ctx.canvas.removeEventListener("pointerdown", press); window.removeEventListener("pointerup", release); };
 }
 
 const gameRunners = {
