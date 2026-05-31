@@ -56,12 +56,12 @@ const games = [
 ];
 
 const defaults = {
-  mines: { size: 16, mines: 40 },
+  mines: { size: 12, mines: 20 },
   gomoku: { level: "hard", size: 15 },
   game2048: { start: 2, goal: 2048 },
   memory: { pairs: 8, peek: 0 },
   pong: { speed: 1.2, rival: "melody" },
-  breakout: { rows: 5, speed: 1.15 },
+  breakout: { rows: 5, speed: 1.0 },
 };
 
 games.forEach((game) => {
