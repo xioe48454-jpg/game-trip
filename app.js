@@ -138,7 +138,7 @@ function bindKey(handler) {
 }
 
 function badge(char = character(), className = "player-symbol") {
-  return `<span class="${className}" style="background:${char.color};box-shadow:inset 0 -3px 0 ${char.accent}"><img class="face" src="${char.img}" alt="${char.name}" onerror="this.style.display='none'"></span>`;
+  return `<span class="${className}" style="background:${char.color};box-shadow:inset 0 -3px 0 ${char.accent}"><img class="face" src="${char.img}" alt="${char.name}" style="width:100%;height:100%;object-fit:contain" onerror="this.style.display='none'"></span>`;
 }
 
 function renderCharacters() {
