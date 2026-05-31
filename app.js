@@ -193,6 +193,7 @@ function renderDifficulty() {
 function loadGame(id) {
   const game = games.find((item) => item.id === id);
   activeGame = game;
+  document.body.dataset.game = id;
   clearGame();
   title.textContent = game.name;
   kicker.textContent = `${game.tag.toUpperCase()} · ${character().name}`;
@@ -578,6 +579,7 @@ function run2048() {
   const board = makeBoard(4, 4, "game2048-grid");
   let grid = Array(16).fill(0);
   let newest = -1;
+  let over = false;
   const cells = grid.map(() => {
     const cell = document.createElement("div");
     cell.className = "cell";
@@ -600,6 +602,16 @@ function run2048() {
     const max = Math.max(...grid);
     setScore(`最大 ${max}`);
     if (max >= Number(settings.game2048.goal)) recordResult(max, `达到 ${settings.game2048.goal}`);
+    const hasEmpty = grid.some((value) => !value);
+    const hasMerge = grid.some((value, index) => {
+      const row = Math.floor(index / 4);
+      const col = index % 4;
+      return (col < 3 && value === grid[index + 1]) || (row < 3 && value === grid[index + 4]);
+    });
+    if (!over && !hasEmpty && !hasMerge) {
+      over = true;
+      recordResult(max, "\u65e0\u6cd5\u7ee7\u7eed\u5408\u5e76\uff0c\u672c\u5c40\u7ed3\u675f");
+    }
   };
   const mergeLine = (line) => {
     const values = line.filter(Boolean);
@@ -613,6 +625,7 @@ function run2048() {
     return values;
   };
   const move = (key) => {
+    if (over) return;
     const before = grid.join();
     for (let r = 0; r < 4; r++) {
       const line = [0, 1, 2, 3].map((c) => grid[r * 4 + c]);
@@ -672,7 +685,7 @@ function runMemory() {
     cell.type = "button";
     cell.style.width = cell.style.height = `${cardSize}px`;
     const reveal = () => {
-      cell.innerHTML = badge(char);
+      cell.innerHTML = badge(char, "memory-symbol");
       cell.classList.add("revealed");
     };
     const hide = () => {
