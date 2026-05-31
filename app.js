@@ -249,6 +249,7 @@ function makeBoard(rows, cols, extraClass = "") {
 }
 
 function runMines() {
+  document.querySelectorAll(".zoom-bar").forEach((bar) => bar.remove());
   const size = Math.max(9, Math.min(30, settings.mines.size));
   const total = size * size;
   const mineCount = Math.max(1, Math.min(500, total - 1, settings.mines.mines));
@@ -268,11 +269,7 @@ function runMines() {
     cellSize = Math.max(20, Math.min(58, cellSize + Number(button.dataset.zoom) * 4));
     cells.forEach((cell) => cell.style.width = cell.style.height = `${cellSize}px`);
   });
-  const oldCleanup = cleanup;
-  cleanup = () => {
-    zoomBar.remove();
-    oldCleanup();
-  };
+  cleanup = () => zoomBar.remove();
   const char = character();
   setScore(`雷 ${mineCount}`);
   setMessage(`避开 ${char.name} 徽章雷，翻开 ${total - mineCount} 个安全格。`);
@@ -429,6 +426,7 @@ function runSnake() {
 }
 
 function runGomoku() {
+  document.querySelectorAll(".zoom-bar").forEach((bar) => bar.remove());
   const size = Math.max(11, Math.min(19, settings.gomoku.size));
   const board = makeBoard(size, size, "gomoku-board");
   const zoomBar = document.createElement("div");

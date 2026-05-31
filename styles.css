@@ -1217,3 +1217,56 @@ body {
   align-content: start;
   padding-top: 12vh;
 }
+
+/* Final mobile layout tuning */
+.game-menu {
+  width: min(520px, 88vw);
+}
+
+.menu-button {
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.menu-button:hover,
+.menu-button.active {
+  transform: translateX(6px) scale(1.015);
+  box-shadow: 0 14px 28px rgba(215, 92, 151, 0.2);
+}
+
+.menu-button:active {
+  transform: scale(0.975);
+}
+
+.game-mode .menu-toggle {
+  top: 14px;
+  left: 12px;
+  width: 58px;
+  height: 52px;
+}
+
+.game-mode .game-area {
+  height: auto;
+  min-height: 0;
+}
+
+.game-mode[data-game="pong"] .game-area {
+  align-content: center;
+  padding-top: 0;
+}
+
+.game-mode[data-game="pong"] .canvas-wrap {
+  transform: translateY(-2vh);
+}
+
+.game-mode[data-game="game2048"] .game-area {
+  align-content: center;
+  padding-top: 0;
+}
+
+@media (max-width: 520px) {
+  .game-mode[data-game="game2048"] .game2048-grid .cell {
+    width: clamp(68px, 19vw, 82px);
+    height: clamp(68px, 19vw, 82px);
+    font-size: 20px;
+  }
+}
