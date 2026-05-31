@@ -299,6 +299,18 @@ function runMines() {
     cell.className = "cell";
     cell.type = "button";
     if (size > 22) cell.style.width = cell.style.height = "28px";
+    const toggleFlag = () => {
+      if (revealed.has(index)) return;
+      if (flagged.has(index)) {
+        flagged.delete(index);
+        cell.classList.remove("flagged");
+        cell.innerHTML = "";
+      } else {
+        flagged.add(index);
+        cell.classList.add("flagged");
+        cell.innerHTML = '<span class="cute-flag" aria-label="标记有雷">🎀</span>';
+      }
+    };
     const reveal = () => {
       if (revealed.has(index) || flagged.has(index)) return;
       if (mines.has(index)) {
@@ -341,27 +353,18 @@ function runMines() {
       if (revealed.size === total - mineCount) recordResult(revealed.size, "清空成功");
     };
     cell.addEventListener("click", () => {
-      if (revealed.has(index) || clickTimers.has(index)) return;
+      if (revealed.has(index)) return;
+      const timer = clickTimers.get(index);
+      if (timer) {
+        clearTimeout(timer);
+        clickTimers.delete(index);
+        toggleFlag();
+        return;
+      }
       clickTimers.set(index, setTimeout(() => {
         clickTimers.delete(index);
         reveal();
       }, 220));
-    });
-    cell.addEventListener("dblclick", (event) => {
-      event.preventDefault();
-      const timer = clickTimers.get(index);
-      if (timer) clearTimeout(timer);
-      clickTimers.delete(index);
-      if (revealed.has(index)) return;
-      if (flagged.has(index)) {
-        flagged.delete(index);
-        cell.classList.remove("flagged");
-        cell.innerHTML = "";
-      } else {
-        flagged.add(index);
-        cell.classList.add("flagged");
-        cell.innerHTML = '<span class="cute-flag" aria-label="标记有雷">🎀</span>';
-      }
     });
     board.append(cell);
     return cell;
@@ -461,7 +464,7 @@ function runGomoku() {
   zoomBar.className = "zoom-bar";
   zoomBar.innerHTML = '<button class="small-button" type="button" data-zoom="-1">-</button><button class="small-button" type="button" data-zoom="1">+</button>';
   document.body.append(zoomBar);
-  let cellSize = size > 15 ? 30 : 34;
+  let cellSize = size > 15 ? 28 : 32;
   const state = Array(size * size).fill("");
   let over = false;
   const player = character();

@@ -1261,6 +1261,8 @@ body {
 .game-mode .game-area {
   height: auto;
   min-height: 0;
+  transform: translateY(5px);
+  margin-bottom: -5px;
 }
 
 .game-mode[data-game="pong"] .game-area {
@@ -1306,6 +1308,21 @@ body {
   align-content: start;
   align-self: stretch;
   padding-top: 8px;
+}
+
+.game-mode[data-game="mines"] .board .cell {
+  width: 32px;
+  height: 32px;
+}
+
+.game-mode[data-game="gomoku"] .game-area {
+  align-content: start;
+  padding-top: 8px;
+}
+
+.game-mode[data-game="memory"] .game-area {
+  align-content: center;
+  padding-top: 0;
 }
 
 .game-mode[data-game="breakout"] .game-area {
