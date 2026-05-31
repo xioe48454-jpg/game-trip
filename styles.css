@@ -418,8 +418,10 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   width: 46px;
   height: 46px;
+  padding: 0;
   border: 2px solid white;
   border-radius: 14px;
   background: #ffd3e8;
@@ -456,9 +458,9 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--mine-icon-size, 22px);
-  height: var(--mine-icon-size, 22px);
-  font-size: var(--mine-icon-size, 22px);
+  width: 85%;
+  height: 85%;
+  font-size: min(70%, 22px);
   line-height: 1;
 }
 
@@ -488,8 +490,8 @@ select {
 .game-mode[data-game="mines"] .mine-symbol,
 .game-mode[data-game="mines"] .player-symbol,
 .game-mode[data-game="mines"] .food-symbol {
-  width: var(--mine-icon-size, 22px);
-  height: var(--mine-icon-size, 22px);
+  width: 85%;
+  height: 85%;
 }
 
 .game2048-grid .cell {

@@ -137,8 +137,8 @@ function bindKey(handler) {
   return () => window.removeEventListener("keydown", handler);
 }
 
-function badge(char = character(), className = "player-symbol", imageSize = 28) {
-  return `<span class="${className}" style="background:${char.color};box-shadow:inset 0 -3px 0 ${char.accent}"><img class="face" src="${char.img}" alt="${char.name}" style="width:${imageSize}px;height:${imageSize}px;object-fit:contain;display:block" onerror="this.style.display='none'"></span>`;
+function badge(char = character(), className = "player-symbol") {
+  return `<span class="${className}" style="background:${char.color};box-shadow:inset 0 -3px 0 ${char.accent}"><img class="face" src="${char.img}" alt="${char.name}" style="width:min(100%, 100%);height:auto;aspect-ratio:1 / 1;object-fit:contain;display:block;max-width:85%;max-height:85%" onerror="this.style.display='none'"></span>`;
 }
 
 function renderCharacters() {
@@ -273,14 +273,8 @@ function runMines() {
   zoomBar.innerHTML = '<button class="small-button" type="button" data-zoom="-1">-</button><button class="small-button" type="button" data-zoom="1">+</button>';
   document.body.append(zoomBar);
   let cellSize = size > 22 ? 28 : 36;
-  const iconSize = () => cellSize >= 44 ? 28 : cellSize >= 36 ? 22 : Math.max(14, Math.round(cellSize * 0.6));
-  board.style.setProperty("--mine-icon-size", `${iconSize()}px`);
   const updateCellSizes = () => {
-    board.style.setProperty("--mine-icon-size", `${iconSize()}px`);
     cells.forEach((cell) => cell.style.width = cell.style.height = `${cellSize}px`);
-    board.querySelectorAll(".mine-symbol .face").forEach((image) => {
-      image.style.width = image.style.height = `${iconSize()}px`;
-    });
   };
   zoomBar.addEventListener("click", (event) => {
     const button = event.target.closest("[data-zoom]");
@@ -338,12 +332,12 @@ function runMines() {
     const reveal = () => {
       if (revealed.has(index) || flagged.has(index)) return;
       if (mines.has(index)) {
-        cell.innerHTML = badge(char, "mine-symbol", iconSize());
+        cell.innerHTML = badge(char, "mine-symbol");
         cell.classList.add("hit");
         setMessage("踩中角色雷了，按重开换一局。");
         recordResult(revealed.size, "踩雷了");
         cells.forEach((item, i) => {
-          if (mines.has(i)) item.innerHTML = badge(char, "mine-symbol", iconSize());
+          if (mines.has(i)) item.innerHTML = badge(char, "mine-symbol");
           item.disabled = true;
         });
         return;
