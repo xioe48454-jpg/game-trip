@@ -1649,9 +1649,14 @@ body {
   bottom: calc(max(16px, env(safe-area-inset-bottom)) + 90px);
   left: 8px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
   touch-action: none;
+}
+
+.poker-sort-button {
+  flex-basis: auto;
 }
 
 .poker-actions .primary-button {

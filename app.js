@@ -1238,9 +1238,10 @@ function runTetris() {
       repeatTimer = setInterval(() => runAction(action), action === "down" ? 65 : 110);
     }, 180);
   };
-  pad.addEventListener("touchstart", startHold, { passive: false });
-  pad.addEventListener("touchend", stopHold, { passive: false });
-  pad.addEventListener("touchcancel", stopHold, { passive: false });
+  pad.addEventListener("pointerdown", startHold);
+  pad.addEventListener("pointerup", stopHold);
+  pad.addEventListener("pointercancel", stopHold);
+  pad.addEventListener("pointerleave", stopHold);
   setScore("\u5206\u6570 0");
   setMessage("\u5de6\u53f3\u79fb\u52a8\u65b9\u5757\uff0c\u53f3\u4fa7\u6309\u94ae\u7528\u4e8e\u65cb\u8f6c\u548c\u52a0\u901f\u4e0b\u843d\u3002");
   draw();
@@ -1248,9 +1249,10 @@ function runTetris() {
   cleanup = () => {
     clearTimeout(dropTimer);
     stopHold();
-    pad.removeEventListener("touchstart", startHold);
-    pad.removeEventListener("touchend", stopHold);
-    pad.removeEventListener("touchcancel", stopHold);
+    pad.removeEventListener("pointerdown", startHold);
+    pad.removeEventListener("pointerup", stopHold);
+    pad.removeEventListener("pointercancel", stopHold);
+    pad.removeEventListener("pointerleave", stopHold);
     pad.remove();
   };
 }
@@ -1265,7 +1267,7 @@ function runPoker() {
   const cards = shuffle(deck);
   const hands = [cards.slice(0, 17), cards.slice(17, 34), cards.slice(34, 51)];
   const landlordCards = cards.slice(51);
-  const sortHand = (hand) => hand.sort((a, b) => a.rank - b.rank || a.suit.localeCompare(b.suit));
+  const sortHand = (hand, descending = false) => hand.sort((a, b) => (a.rank - b.rank || a.suit.localeCompare(b.suit)) * (descending ? -1 : 1));
   hands.forEach(sortHand);
   let phase = "bid";
   let landlord = null;
@@ -1276,6 +1278,8 @@ function runPoker() {
   let selected = new Set();
   let aiTimer = null;
   let lastTouch = 0;
+  let playerDescending = false;
+  let playerHasPlayed = false;
   let running = true;
 
   const table = document.createElement("div");
@@ -1426,12 +1430,13 @@ function runPoker() {
       <div class="poker-landlord">\u5730\u4e3b\u724c\uff1a${landlordCards.map((card) => renderCard(card)).join("")}</div>
       <div class="poker-last"><span>\u4e0a\u4e00\u624b</span><div>${last}</div></div>`;
     handEl.innerHTML = hands[0].map((card) => renderCard(card, phase === "play" && turn === 0)).join("");
+    const sortButton = playerHasPlayed ? "" : `<button class="primary-button poker-sort-button" type="button" data-poker-action="sort">\u6574\u7406\uff1a${playerDescending ? "\u5927\u2192\u5c0f" : "\u5c0f\u2192\u5927"}</button>`;
     if (phase === "bid") {
-      actions.innerHTML = '<button class="primary-button" type="button" data-poker-action="bid">\u53eb\u5730\u4e3b</button><button class="primary-button" type="button" data-poker-action="skip-bid">\u4e0d\u53eb</button>';
+      actions.innerHTML = `<button class="primary-button" type="button" data-poker-action="bid">\u53eb\u5730\u4e3b</button><button class="primary-button" type="button" data-poker-action="skip-bid">\u4e0d\u53eb</button>${sortButton}`;
     } else {
       actions.innerHTML = `<button class="primary-button" type="button" data-poker-action="play" ${selected.size ? "" : "disabled"}>\u51fa\u724c</button>
         <button class="primary-button" type="button" data-poker-action="pass" ${!lastPlay || lastPlay.player === 0 ? "disabled" : ""}>\u4e0d\u51fa</button>
-        <button class="primary-button" type="button" data-poker-action="hint">\u63d0\u793a</button>`;
+        <button class="primary-button" type="button" data-poker-action="hint">\u63d0\u793a</button>${sortButton}`;
     }
   };
   const finish = (winner) => {
@@ -1447,6 +1452,7 @@ function runPoker() {
   };
   const playCards = (player, play) => {
     hands[player] = hands[player].filter((card) => !play.cards.some((used) => used.id === card.id));
+    if (player === 0) playerHasPlayed = true;
     if (play.type.type === "bomb" || play.type.type === "rocket") multiplier *= 2;
     lastPlay = { ...play, player };
     passes = 0;
@@ -1484,7 +1490,7 @@ function runPoker() {
   const startPlay = (chosenLandlord) => {
     landlord = chosenLandlord;
     hands[landlord].push(...landlordCards);
-    sortHand(hands[landlord]);
+    sortHand(hands[landlord], landlord === 0 && playerDescending);
     phase = "play";
     turn = landlord;
     selected.clear();
@@ -1497,6 +1503,11 @@ function runPoker() {
     const button = event.target.closest("[data-poker-action]");
     if (!button || button.disabled || !running) return;
     const action = button.dataset.pokerAction;
+    if (action === "sort") {
+      playerDescending = !playerDescending;
+      sortHand(hands[0], playerDescending);
+      return render();
+    }
     if (action === "bid") return startPlay(0);
     if (action === "skip-bid") return startPlay(Math.random() < 0.5 ? 1 : 2);
     if (turn !== 0) return;
