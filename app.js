@@ -128,6 +128,7 @@ function clearGame() {
   cleanup();
   cleanup = () => {};
   gameArea.innerHTML = "";
+  scoreBox.classList.remove("score-danger");
   gameArea.focus();
 }
 
@@ -262,6 +263,10 @@ function runMines() {
   const revealed = new Set();
   const flagged = new Set();
   const clickTimers = new Map();
+  const hint = document.createElement("p");
+  hint.className = "mines-hint";
+  hint.textContent = "\u5355\u51fb\u7ffb\u5f00 \u00b7 \u53cc\u51fb\u63d2\u65d7";
+  gameArea.append(hint);
   const board = makeBoard(size, size);
   const zoomBar = document.createElement("div");
   zoomBar.className = "zoom-bar";
@@ -279,7 +284,12 @@ function runMines() {
     clickTimers.forEach((timer) => clearTimeout(timer));
   };
   const char = character();
-  setScore(`雷 ${mineCount}`);
+  const updateRemainingMines = () => {
+    const remaining = mineCount - flagged.size;
+    setScore(`\ud83d\udca3 ${remaining}`);
+    scoreBox.classList.toggle("score-danger", remaining === 0);
+  };
+  updateRemainingMines();
   setMessage(`避开 ${char.name} 徽章雷，翻开 ${total - mineCount} 个安全格。`);
 
   const countNear = (index) => {
@@ -311,8 +321,10 @@ function runMines() {
       } else {
         flagged.add(index);
         cell.classList.add("flagged");
-        cell.innerHTML = '<span class="cute-flag" aria-label="标记有雷">🎀</span>';
+        cell.innerHTML = '<span class="cute-flag" aria-label="\u6807\u8bb0\u6709\u96f7">\ud83c\udf80</span>';
+        hint.hidden = true;
       }
+      updateRemainingMines();
     };
     const reveal = () => {
       if (revealed.has(index) || flagged.has(index)) return;
@@ -352,7 +364,7 @@ function runMines() {
         }
       };
       revealFrom(index);
-      setScore(`安全 ${revealed.size}/${total - mineCount}`);
+      updateRemainingMines();
       if (revealed.size === total - mineCount) recordResult(revealed.size, "清空成功");
     };
     cell.addEventListener("click", () => {
@@ -378,6 +390,7 @@ function runGomoku() {
   document.querySelectorAll(".zoom-bar").forEach((bar) => bar.remove());
   const size = Math.max(11, Math.min(19, settings.gomoku.size));
   const board = makeBoard(size, size, "gomoku-board");
+  board.style.setProperty("--gomoku-size", size);
   const zoomBar = document.createElement("div");
   zoomBar.className = "zoom-bar";
   zoomBar.innerHTML = '<button class="small-button" type="button" data-zoom="-1">-</button><button class="small-button" type="button" data-zoom="1">+</button>';
@@ -385,6 +398,8 @@ function runGomoku() {
   let cellSize = size > 15 ? 28 : 32;
   const state = Array(size * size).fill("");
   let over = false;
+  let aiThinking = false;
+  let aiTimer = null;
   const player = character();
   const cpu = otherCharacter();
   const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]];
@@ -498,7 +513,7 @@ function runGomoku() {
     cell.type = "button";
     cell.style.width = cell.style.height = `${cellSize}px`;
     cell.addEventListener("click", () => {
-      if (state[index] || over) return;
+      if (state[index] || over || aiThinking) return;
       place(index, "X", player);
       if (over) return;
       if (!state.some((mark) => !mark)) {
@@ -506,8 +521,16 @@ function runGomoku() {
         recordResult(50, "棋盘下满，平局。");
         return;
       }
-      const move = bestMove();
-      place(move, "O", cpu);
+      aiThinking = true;
+      setMessage("\u5bf9\u65b9\u601d\u8003\u4e2d\u2026");
+      aiTimer = setTimeout(() => {
+        aiTimer = null;
+        if (over) return;
+        const move = bestMove();
+        place(move, "O", cpu);
+        aiThinking = false;
+        if (!over) setMessage(`\u4f60\u662f ${player.name}\uff0c\u4e94\u5b50\u8fde\u7ebf\u83b7\u80dc\u3002\u7535\u8111\u96be\u5ea6\uff1a${settings.gomoku.level}\u3002`);
+      }, 600);
     });
     board.append(cell);
     return cell;
@@ -519,11 +542,17 @@ function runGomoku() {
     cellSize = Math.max(22, Math.min(56, cellSize + Number(button.dataset.zoom) * 4));
     cells.forEach((cell) => cell.style.width = cell.style.height = `${cellSize}px`);
   });
-  cleanup = () => zoomBar.remove();
+  cleanup = () => {
+    zoomBar.remove();
+    if (aiTimer) clearTimeout(aiTimer);
+  };
 }
 
 function run2048() {
   const board = makeBoard(4, 4, "game2048-grid");
+  const trail = document.createElement("span");
+  trail.className = "swipe-trail";
+  board.append(trail);
   let grid = Array(16).fill(0);
   let newest = -1;
   let over = false;
@@ -539,11 +568,12 @@ function run2048() {
     newest = empty[rand(empty.length)];
     grid[newest] = Math.random() < 0.9 ? 2 : 4;
   };
-  const draw = () => {
+  const draw = (mergedTargets = new Set()) => {
     cells.forEach((cell, i) => {
       cell.textContent = grid[i] || "";
       cell.className = grid[i] ? "cell dark" : "cell empty";
       if (i === newest) cell.classList.add("tile-new");
+      if (mergedTargets.has(i)) cell.classList.add("tile-merged");
       cell.style.background = grid[i] ? `hsl(${330 - Math.log2(grid[i]) * 8}, 84%, ${78 - Math.min(Math.log2(grid[i]) * 3, 32)}%)` : "";
     });
     const max = Math.max(...grid);
@@ -560,34 +590,79 @@ function run2048() {
       recordResult(max, "\u65e0\u6cd5\u7ee7\u7eed\u5408\u5e76\uff0c\u672c\u5c40\u7ed3\u675f");
     }
   };
-  const mergeLine = (line) => {
-    const values = line.filter(Boolean);
-    for (let i = 0; i < values.length - 1; i++) {
-      if (values[i] === values[i + 1]) {
-        values[i] *= 2;
-        values.splice(i + 1, 1);
+  const animateSlides = (slides) => {
+    slides.filter(({ from, to }) => from !== to).forEach(({ from, to, value }) => {
+      const source = cells[from];
+      const target = cells[to];
+      const ghost = document.createElement("span");
+      ghost.className = "tile-ghost";
+      ghost.textContent = value;
+      ghost.style.left = `${source.offsetLeft}px`;
+      ghost.style.top = `${source.offsetTop}px`;
+      ghost.style.width = `${source.offsetWidth}px`;
+      ghost.style.height = `${source.offsetHeight}px`;
+      ghost.style.background = `hsl(${330 - Math.log2(value) * 8}, 84%, ${78 - Math.min(Math.log2(value) * 3, 32)}%)`;
+      board.append(ghost);
+      requestAnimationFrame(() => {
+        ghost.style.transform = `translate(${target.offsetLeft - source.offsetLeft}px, ${target.offsetTop - source.offsetTop}px)`;
+      });
+      setTimeout(() => ghost.remove(), 170);
+    });
+  };
+  const showTrail = (key) => {
+    const directions = {
+      ArrowUp: ["\u2191", "trail-up"],
+      ArrowDown: ["\u2193", "trail-down"],
+      ArrowLeft: ["\u2190", "trail-left"],
+      ArrowRight: ["\u2192", "trail-right"],
+    };
+    const [arrow, className] = directions[key];
+    trail.textContent = arrow;
+    trail.className = "swipe-trail";
+    void trail.offsetWidth;
+    trail.classList.add(className);
+  };
+  const moveLine = (indices, slides, mergedTargets) => {
+    const items = indices.filter((index) => grid[index]).map((index) => ({ value: grid[index], sources: [index], merged: false }));
+    const result = [];
+    items.forEach((item) => {
+      const last = result[result.length - 1];
+      if (last && last.value === item.value && !last.merged) {
+        last.value *= 2;
+        last.sources.push(...item.sources);
+        last.merged = true;
+      } else {
+        result.push(item);
       }
-    }
-    while (values.length < 4) values.push(0);
-    return values;
+    });
+    indices.forEach((index) => grid[index] = 0);
+    result.forEach((item, position) => {
+      const target = indices[position];
+      grid[target] = item.value;
+      item.sources.forEach((source) => slides.push({ from: source, to: target, value: item.value / item.sources.length }));
+      if (item.merged) mergedTargets.add(target);
+    });
   };
   const move = (key) => {
     if (over) return;
     const before = grid.join();
-    for (let r = 0; r < 4; r++) {
-      const line = [0, 1, 2, 3].map((c) => grid[r * 4 + c]);
-      const merged = mergeLine(key === "ArrowRight" ? line.reverse() : line);
-      if (key === "ArrowRight") merged.reverse();
-      if (key === "ArrowLeft" || key === "ArrowRight") merged.forEach((v, c) => grid[r * 4 + c] = v);
+    const slides = [];
+    const mergedTargets = new Set();
+    for (let n = 0; n < 4; n++) {
+      const line = key === "ArrowLeft" ? [0, 1, 2, 3].map((c) => n * 4 + c)
+        : key === "ArrowRight" ? [3, 2, 1, 0].map((c) => n * 4 + c)
+        : key === "ArrowUp" ? [0, 1, 2, 3].map((r) => r * 4 + n)
+        : [3, 2, 1, 0].map((r) => r * 4 + n);
+      moveLine(line, slides, mergedTargets);
     }
-    for (let c = 0; c < 4; c++) {
-      const line = [0, 1, 2, 3].map((r) => grid[r * 4 + c]);
-      const merged = mergeLine(key === "ArrowDown" ? line.reverse() : line);
-      if (key === "ArrowDown") merged.reverse();
-      if (key === "ArrowUp" || key === "ArrowDown") merged.forEach((v, r) => grid[r * 4 + c] = v);
+    if (grid.join() !== before) {
+      addTile();
+      draw(mergedTargets);
+      animateSlides(slides);
+      showTrail(key);
+    } else {
+      draw();
     }
-    if (grid.join() !== before) addTile();
-    draw();
   };
   const keyCleanup = bindKey((event) => {
     if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {

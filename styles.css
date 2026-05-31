@@ -384,6 +384,10 @@ select {
   color: var(--ink);
 }
 
+.score-box.score-danger {
+  color: #df3f62;
+}
+
 .game-area {
   display: grid;
   align-content: start;
@@ -393,6 +397,15 @@ select {
   outline: none;
   overflow: auto;
   transition: opacity 200ms ease;
+}
+
+.mines-hint {
+  width: 100%;
+  margin: 0 0 6px;
+  color: var(--pink);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
 }
 
 .board {
@@ -472,25 +485,41 @@ select {
 }
 
 .gomoku-board {
-  gap: 3px;
-  padding: 8px;
+  --gomoku-size: 15;
+  gap: 0;
+  padding: 0;
   border-radius: 18px;
   background: #fff7cf;
   box-shadow: inset 0 0 0 2px #ffd86a;
+  overflow: hidden;
 }
 
 .gomoku-board .cell {
+  position: relative;
   width: 34px;
   height: 34px;
-  border-radius: 50%;
-  background: #ffeaa5;
-  border-color: #fff8dc;
-  box-shadow: inset 0 -3px 0 rgba(209, 154, 29, 0.2);
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(#e4b83d, #e4b83d) center / 100% 1px no-repeat,
+    linear-gradient(90deg, #e4b83d, #e4b83d) center / 1px 100% no-repeat;
+  box-shadow: none;
 }
 
 .gomoku-board .cell.revealed {
-  background: white;
-  border-color: #ff8fc6;
+  background:
+    linear-gradient(#e4b83d, #e4b83d) center / 100% 1px no-repeat,
+    linear-gradient(90deg, #e4b83d, #e4b83d) center / 1px 100% no-repeat;
+}
+
+.gomoku-board .player-symbol {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 88%;
+  height: 88%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .tile-new {
@@ -514,12 +543,73 @@ canvas {
 }
 
 .game2048-grid {
+  position: relative;
   touch-action: none;
 }
 
 .game2048-grid .cell {
   width: clamp(62px, 19vw, 92px);
   height: clamp(62px, 19vw, 92px);
+}
+
+.tile-ghost {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: white;
+  font-size: 22px;
+  font-weight: 900;
+  pointer-events: none;
+  transition: transform 150ms ease;
+}
+
+.tile-merged {
+  animation: tile-pop 150ms ease;
+}
+
+@keyframes tile-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.swipe-trail {
+  position: absolute;
+  z-index: 8;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  pointer-events: none;
+  color: var(--pink-dark);
+  font-size: 40px;
+  opacity: 0;
+}
+
+.swipe-trail.trail-up { animation: trail-up 400ms ease-out; }
+.swipe-trail.trail-down { animation: trail-down 400ms ease-out; }
+.swipe-trail.trail-left { animation: trail-left 400ms ease-out; }
+.swipe-trail.trail-right { animation: trail-right 400ms ease-out; }
+
+@keyframes trail-up {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-30px); opacity: 0; }
+}
+
+@keyframes trail-down {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(30px); opacity: 0; }
+}
+
+@keyframes trail-left {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(-30px); opacity: 0; }
+}
+
+@keyframes trail-right {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(30px); opacity: 0; }
 }
 
 .memory-card {
