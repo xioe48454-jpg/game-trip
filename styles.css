@@ -1361,6 +1361,309 @@ body {
   box-shadow: none !important;
 }
 
+.game-mode[data-game="snake"] .game-area {
+  align-content: start;
+  padding: 8px 8px calc(212px + env(safe-area-inset-bottom));
+  overflow: auto;
+}
+
+.snake-board {
+  gap: 3px;
+  max-width: calc(100vw - 20px);
+  max-height: calc(100dvh - 390px - env(safe-area-inset-bottom));
+  overflow: auto;
+  touch-action: none;
+}
+
+.snake-board .cell {
+  width: clamp(18px, 5vw, 30px);
+  height: clamp(18px, 5vw, 30px);
+  border-radius: 8px;
+}
+
+.snake-board .player-symbol,
+.snake-board .food-symbol {
+  width: 85%;
+  height: 85%;
+}
+
+.snake-pad {
+  position: fixed;
+  z-index: 45;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(3, 60px);
+  grid-template-rows: repeat(3, 60px);
+  gap: 8px;
+  transform: translateX(-50%);
+  touch-action: none;
+}
+
+.snake-pad button {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border: 3px solid white;
+  border-radius: 18px;
+  background: rgba(255, 125, 183, 0.96);
+  color: white;
+  font-size: 28px;
+  font-weight: 900;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.snake-pad button:active {
+  background: var(--pink-dark);
+  transform: scale(0.94);
+}
+
+.snake-pad [data-direction="up"] {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.snake-pad [data-direction="left"] {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.snake-pad [data-direction="down"] {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.snake-pad [data-direction="right"] {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.game-mode[data-game="tetris"] .game-area {
+  align-content: center;
+  padding: 8px 8px calc(104px + env(safe-area-inset-bottom));
+  overflow: hidden;
+}
+
+.game-mode[data-game="tetris"] .canvas-wrap {
+  height: 100%;
+  place-items: center;
+}
+
+.game-mode[data-game="tetris"] canvas {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100dvh - 315px - env(safe-area-inset-bottom));
+  aspect-ratio: 640 / 760;
+  border-radius: 18px;
+}
+
+.tetris-pad {
+  position: fixed;
+  z-index: 45;
+  right: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 34px;
+  touch-action: none;
+}
+
+.tetris-pad-group {
+  display: flex;
+  gap: 10px;
+}
+
+.tetris-pad button {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border: 3px solid white;
+  border-radius: 20px;
+  background: rgba(255, 125, 183, 0.96);
+  color: white;
+  font-size: 30px;
+  font-weight: 900;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.tetris-pad button:active {
+  background: var(--pink-dark);
+  transform: scale(0.94);
+}
+
+.game-mode[data-game="poker"] .game-area {
+  align-content: start;
+  padding: 6px 8px 188px;
+  overflow: hidden;
+}
+
+.poker-table {
+  position: relative;
+  width: min(100%, 620px);
+  height: min(48vh, 390px);
+  min-height: 280px;
+  border: 3px solid white;
+  border-radius: 18px;
+  background: rgba(255, 228, 242, 0.8);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.poker-ai {
+  position: absolute;
+  z-index: 2;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.poker-ai-top {
+  top: 10px;
+  left: 14px;
+}
+
+.poker-ai-side {
+  top: 92px;
+  right: 8px;
+  width: 48px;
+}
+
+.poker-ai > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.poker-ai-card {
+  display: block;
+  width: 14px;
+  height: 21px;
+  border: 1px solid white;
+  border-radius: 4px;
+  background: repeating-linear-gradient(135deg, var(--pink), var(--pink) 4px, #ffe5f3 4px, #ffe5f3 8px);
+}
+
+.poker-center {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 52px 58px 12px 12px;
+  box-sizing: border-box;
+  color: var(--ink);
+  text-align: center;
+}
+
+.poker-meta {
+  color: var(--pink-dark);
+  font-weight: 900;
+}
+
+.poker-landlord,
+.poker-last {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.poker-landlord .poker-card,
+.poker-last .poker-card {
+  width: 28px;
+  height: 42px;
+  margin-left: -5px;
+  font-size: 11px;
+}
+
+.poker-hand {
+  position: fixed;
+  z-index: 43;
+  right: 10px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 10px;
+  display: flex;
+  justify-content: center;
+  min-height: 76px;
+  padding: 14px 8px 0;
+  overflow-x: visible;
+  touch-action: manipulation;
+}
+
+.poker-card {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 64px;
+  margin-left: -18px;
+  padding: 2px;
+  border: 2px solid #ffe2f0;
+  border-radius: 8px;
+  background: white;
+  color: #343044;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 rgba(232, 87, 155, 0.16);
+  touch-action: manipulation;
+}
+
+.poker-card:first-child {
+  margin-left: 0;
+}
+
+.poker-card.red {
+  color: #df3f62;
+}
+
+.poker-card.selected {
+  z-index: 2;
+  border-color: var(--pink-dark);
+  background: #fff1f8;
+  transform: translateY(-12px);
+}
+
+.poker-card:disabled {
+  opacity: 1;
+}
+
+.poker-actions {
+  position: fixed;
+  z-index: 44;
+  right: 8px;
+  bottom: calc(max(16px, env(safe-area-inset-bottom)) + 90px);
+  left: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  touch-action: none;
+}
+
+.poker-actions .primary-button {
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.poker-actions .primary-button:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
 @media (max-width: 820px) {
   .field-row input,
   .field-row select {

@@ -53,6 +53,9 @@ const games = [
   { id: "memory", name: "\u8bb0\u5fc6\u7ffb\u724c", tag: "\u8bb0\u5fc6", icon: "\u5361", help: "\u4e00\u6b21\u7ffb\u4e24\u5f20\uff0c\u914d\u5bf9\u6240\u6709\u89d2\u8272\u5361\u3002" },
   { id: "pong", name: "\u4e52\u4e53\u7403", tag: "\u7403\u573a", icon: "\u62cd", help: "\u62d6\u52a8\u4e0b\u65b9\u7403\u62cd\uff0c\u548c\u5bf9\u9762\u7684\u4e09\u4e3d\u9e25\u89d2\u8272\u6253\u4e52\u4e53\u7403\u3002" },
   { id: "breakout", name: "\u6253\u7816\u5757", tag: "\u8857\u673a", icon: "\u7816", help: "\u79fb\u52a8\u7403\u62cd\u53cd\u5f39\u89d2\u8272\u7403\uff0c\u6e05\u6389\u793c\u7269\u7816\u5757\u3002" },
+  { id: "snake", name: "\u8d2a\u5403\u86c7", tag: "\u8857\u673a", icon: "\u86c7", help: "\u7528\u65b9\u5411\u952e\u63a7\u5236\u89d2\u8272\u5403\u6389\u98df\u7269\uff0c\u78b0\u5899\u6216\u54ac\u5230\u81ea\u5df1\u5c31\u7ed3\u675f\u3002" },
+  { id: "tetris", name: "\u4fc4\u7f57\u65af\u65b9\u5757", tag: "\u8857\u673a", icon: "\u5757", help: "\u65b9\u5757\u4ece\u4e0a\u65b9\u843d\u4e0b\uff0c\u586b\u6ee1\u4e00\u884c\u5373\u53ef\u6d88\u9664\uff0c\u65b9\u5757\u5806\u5230\u9876\u90e8\u6e38\u620f\u7ed3\u675f\u3002" },
+  { id: "poker", name: "\u6597\u5730\u4e3b", tag: "\u724c\u5c40", icon: "\u724c", help: "\u53eb\u5730\u4e3b\u540e\u51fa\u5b8c\u624b\u724c\u83b7\u80dc\uff0c\u652f\u6301\u6240\u6709\u6807\u51c6\u724c\u578b\uff0c\u7535\u8111\u63a7\u5236\u53e6\u5916\u4e24\u5bb6\u3002" },
 ];
 
 const defaults = {
@@ -62,6 +65,9 @@ const defaults = {
   memory: { pairs: 8, peek: 0 },
   pong: { speed: 1.2, rival: "melody" },
   breakout: { rows: 5, speed: 1.0 },
+  snake: { size: 16, speed: 1.0 },
+  tetris: { speed: 1.0 },
+  poker: { level: "normal" },
 };
 
 games.forEach((game) => {
@@ -188,6 +194,9 @@ function renderDifficulty() {
     memory: () => numberField("\u5bf9\u5b50", "pairs", 4, 18) + selectField("\u9884\u89c8", "peek", [[0, "\u5173\u95ed"], [2, "2 \u79d2"], [4, "4 \u79d2"]]),
     pong: () => rangeField("\u901f\u5ea6", "speed", 0.8, 3, 0.2) + characterSelectField("\u5bf9\u624b", "rival"),
     breakout: () => numberField("\u884c\u6570", "rows", 3, 10) + rangeField("\u901f\u5ea6", "speed", 0.8, 2.5, 0.1),
+    snake: () => numberField("\u68cb\u76d8", "size", 12, 25) + rangeField("\u901f\u5ea6", "speed", 0.8, 3, 0.2),
+    tetris: () => rangeField("\u901f\u5ea6", "speed", 0.5, 3, 0.5),
+    poker: () => selectField("AI\u96be\u5ea6", "level", [["easy", "\u7b80\u5355"], ["normal", "\u666e\u901a"], ["hard", "\u56f0\u96be"]]),
   };
   difficultyPanel.innerHTML = panels[id]();
 }
@@ -933,6 +942,619 @@ function runBreakout() {
   };
 }
 
+function runSnake() {
+  const size = Math.max(12, Math.min(25, settings.snake.size));
+  const baseSpeed = Math.max(0.8, Math.min(3, settings.snake.speed));
+  const board = makeBoard(size, size, "snake-board");
+  const char = character();
+  const foodChar = otherCharacter();
+  const cells = Array.from({ length: size * size }, () => {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    board.append(cell);
+    return cell;
+  });
+  let snake = [{ x: Math.floor(size / 2), y: Math.floor(size / 2) }];
+  let direction = { x: 1, y: 0 };
+  let nextDirection = direction;
+  let food = null;
+  let score = 0;
+  let running = true;
+  let timer = null;
+
+  const indexOf = ({ x, y }) => y * size + x;
+  const samePoint = (a, b) => a.x === b.x && a.y === b.y;
+  const placeFood = () => {
+    const empty = Array.from({ length: size * size }, (_, index) => ({
+      x: index % size,
+      y: Math.floor(index / size),
+    })).filter((point) => !snake.some((part) => samePoint(part, point)));
+    food = empty.length ? empty[rand(empty.length)] : null;
+  };
+  const interval = () => Math.max(72, Math.round(310 / (baseSpeed + score / 120)));
+  const schedule = () => {
+    clearTimeout(timer);
+    if (running) timer = setTimeout(tick, interval());
+  };
+  const draw = () => {
+    cells.forEach((cell) => {
+      cell.className = "cell";
+      cell.innerHTML = "";
+    });
+    snake.slice(1).forEach((part) => cells[indexOf(part)].classList.add("dark"));
+    cells[indexOf(snake[0])].innerHTML = badge(char, "player-symbol");
+    if (food) cells[indexOf(food)].innerHTML = badge(foodChar, "food-symbol");
+    setScore(`\u5206\u6570 ${score}`);
+  };
+  const finish = (text) => {
+    running = false;
+    clearTimeout(timer);
+    recordResult(score, text);
+  };
+  function tick() {
+    direction = nextDirection;
+    const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+    const hitWall = head.x < 0 || head.x >= size || head.y < 0 || head.y >= size;
+    const grows = food && samePoint(head, food);
+    const bodyToCheck = grows ? snake : snake.slice(0, -1);
+    const hitSelf = bodyToCheck.some((part) => samePoint(part, head));
+    if (hitWall || hitSelf) {
+      finish("\u78b0\u5230\u969c\u788d\uff0c\u672c\u5c40\u7ed3\u675f");
+      return;
+    }
+    snake.unshift(head);
+    if (grows) {
+      score += Math.round(10 * baseSpeed);
+      placeFood();
+      if (!food) {
+        draw();
+        finish("\u68cb\u76d8\u5df2\u7ecf\u586b\u6ee1");
+        return;
+      }
+    } else {
+      snake.pop();
+    }
+    draw();
+    schedule();
+  }
+
+  const pad = document.createElement("div");
+  pad.className = "snake-pad";
+  pad.innerHTML = `
+    <button type="button" data-direction="up" aria-label="\u5411\u4e0a">\u2191</button>
+    <button type="button" data-direction="left" aria-label="\u5411\u5de6">\u2190</button>
+    <button type="button" data-direction="down" aria-label="\u5411\u4e0b">\u2193</button>
+    <button type="button" data-direction="right" aria-label="\u5411\u53f3">\u2192</button>
+  `;
+  document.body.append(pad);
+  const directions = {
+    up: { x: 0, y: -1 },
+    down: { x: 0, y: 1 },
+    left: { x: -1, y: 0 },
+    right: { x: 1, y: 0 },
+  };
+  const steer = (event) => {
+    event.preventDefault();
+    const button = event.target.closest("[data-direction]");
+    if (!button || !running) return;
+    const selected = directions[button.dataset.direction];
+    if (selected.x !== -direction.x || selected.y !== -direction.y) nextDirection = selected;
+  };
+  pad.addEventListener("pointerdown", steer);
+  placeFood();
+  draw();
+  setMessage("\u7528\u5e95\u90e8\u65b9\u5411\u952e\u63a7\u5236\u89d2\u8272\uff0c\u5403\u6389\u98df\u7269\u83b7\u5f97\u5206\u6570\u3002");
+  schedule();
+  cleanup = () => {
+    clearTimeout(timer);
+    pad.removeEventListener("pointerdown", steer);
+    pad.remove();
+  };
+}
+
+function runTetris() {
+  const ctx = canvasGame(640, 760);
+  const cols = 10;
+  const rows = 20;
+  const cellSize = 32;
+  const offsetX = 160;
+  const offsetY = 60;
+  const baseSpeed = Math.max(0.5, Math.min(3, settings.tetris.speed));
+  const char = character();
+  const shapes = {
+    I: [[1, 1, 1, 1]],
+    O: [[1, 1], [1, 1]],
+    T: [[0, 1, 0], [1, 1, 1]],
+    S: [[0, 1, 1], [1, 1, 0]],
+    Z: [[1, 1, 0], [0, 1, 1]],
+    J: [[1, 0, 0], [1, 1, 1]],
+    L: [[0, 0, 1], [1, 1, 1]],
+  };
+  const shapeNames = Object.keys(shapes);
+  const grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+  let score = 0;
+  let lines = 0;
+  let running = true;
+  let dropTimer = null;
+  let holdTimer = null;
+  let repeatTimer = null;
+
+  const copyShape = (shape) => shape.map((row) => [...row]);
+  const spawn = () => {
+    const name = shapeNames[rand(shapeNames.length)];
+    const shape = copyShape(shapes[name]);
+    return { name, shape, x: Math.floor((cols - shape[0].length) / 2), y: 0 };
+  };
+  let piece = spawn();
+
+  const eachBlock = (target, callback) => {
+    target.shape.forEach((row, y) => {
+      row.forEach((filled, x) => {
+        if (filled) callback(target.x + x, target.y + y);
+      });
+    });
+  };
+  const collides = (target) => {
+    let blocked = false;
+    eachBlock(target, (x, y) => {
+      if (x < 0 || x >= cols || y >= rows || (y >= 0 && grid[y][x])) blocked = true;
+    });
+    return blocked;
+  };
+  const rotateShape = (shape) => shape[0].map((_, column) => shape.map((row) => row[column]).reverse());
+  const drawBlock = (x, y, color = char.color) => {
+    const px = offsetX + x * cellSize;
+    const py = offsetY + y * cellSize;
+    ctx.fillStyle = color;
+    ctx.fillRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
+    ctx.strokeStyle = char.accent;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(px + 3, py + 3, cellSize - 6, cellSize - 6);
+  };
+  const draw = () => {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.fillStyle = "#fff4fb";
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.fillStyle = "rgba(255, 211, 232, 0.62)";
+    ctx.fillRect(offsetX, offsetY, cols * cellSize, rows * cellSize);
+    ctx.strokeStyle = "rgba(232, 87, 155, 0.14)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= cols; x++) {
+      ctx.beginPath();
+      ctx.moveTo(offsetX + x * cellSize, offsetY);
+      ctx.lineTo(offsetX + x * cellSize, offsetY + rows * cellSize);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= rows; y++) {
+      ctx.beginPath();
+      ctx.moveTo(offsetX, offsetY + y * cellSize);
+      ctx.lineTo(offsetX + cols * cellSize, offsetY + y * cellSize);
+      ctx.stroke();
+    }
+    grid.forEach((row, y) => row.forEach((filled, x) => {
+      if (filled) drawBlock(x, y);
+    }));
+    eachBlock(piece, (x, y) => {
+      if (y >= 0) drawBlock(x, y);
+    });
+  };
+  const currentDelay = () => Math.max(90, Math.round(720 / (baseSpeed + score / 1200)));
+  const scheduleDrop = () => {
+    clearTimeout(dropTimer);
+    if (running) dropTimer = setTimeout(() => stepDown(), currentDelay());
+  };
+  const finish = () => {
+    running = false;
+    clearTimeout(dropTimer);
+    clearTimeout(holdTimer);
+    clearInterval(repeatTimer);
+    recordResult(score, "\u65b9\u5757\u5806\u5230\u9876\u90e8\uff0c\u672c\u5c40\u7ed3\u675f");
+  };
+  const clearLines = () => {
+    let cleared = 0;
+    for (let y = rows - 1; y >= 0; y--) {
+      if (grid[y].every(Boolean)) {
+        grid.splice(y, 1);
+        grid.unshift(Array(cols).fill(0));
+        cleared++;
+        y++;
+      }
+    }
+    if (!cleared) return;
+    lines += cleared;
+    score += cleared * 100 + Math.max(0, cleared - 1) * 50;
+    setScore(`\u5206\u6570 ${score}`);
+    setMessage(`\u6d88\u9664 ${cleared} \u884c\uff0c\u7d2f\u8ba1 ${lines} \u884c\u3002`);
+  };
+  const lockPiece = () => {
+    eachBlock(piece, (x, y) => {
+      if (y >= 0) grid[y][x] = 1;
+    });
+    clearLines();
+    piece = spawn();
+    if (collides(piece)) {
+      draw();
+      finish();
+    }
+  };
+  const move = (dx) => {
+    if (!running) return;
+    const candidate = { ...piece, x: piece.x + dx };
+    if (!collides(candidate)) piece = candidate;
+    draw();
+  };
+  const rotate = () => {
+    if (!running) return;
+    const rotated = rotateShape(piece.shape);
+    const kicks = [0, -1, 1, -2, 2];
+    const next = kicks.map((kick) => ({ ...piece, x: piece.x + kick, shape: rotated })).find((candidate) => !collides(candidate));
+    if (next) piece = next;
+    draw();
+  };
+  function stepDown() {
+    if (!running) return;
+    const candidate = { ...piece, y: piece.y + 1 };
+    if (collides(candidate)) lockPiece();
+    else piece = candidate;
+    draw();
+    scheduleDrop();
+  }
+
+  const pad = document.createElement("div");
+  pad.className = "tetris-pad";
+  pad.innerHTML = `
+    <div class="tetris-pad-group">
+      <button type="button" data-action="left" aria-label="\u5411\u5de6">\u2190</button>
+      <button type="button" data-action="right" aria-label="\u5411\u53f3">\u2192</button>
+    </div>
+    <div class="tetris-pad-group">
+      <button type="button" data-action="rotate" aria-label="\u65cb\u8f6c">\u21bb</button>
+      <button type="button" data-action="down" aria-label="\u52a0\u901f\u4e0b\u843d">\u2193</button>
+    </div>
+  `;
+  document.body.append(pad);
+  const runAction = (action) => {
+    if (action === "left") move(-1);
+    if (action === "right") move(1);
+    if (action === "rotate") rotate();
+    if (action === "down") stepDown();
+  };
+  const stopHold = (event) => {
+    if (event) event.preventDefault();
+    clearTimeout(holdTimer);
+    clearInterval(repeatTimer);
+    holdTimer = null;
+    repeatTimer = null;
+  };
+  const startHold = (event) => {
+    event.preventDefault();
+    const button = event.target.closest("[data-action]");
+    if (!button || !running) return;
+    const action = button.dataset.action;
+    stopHold();
+    runAction(action);
+    if (action === "rotate") return;
+    holdTimer = setTimeout(() => {
+      repeatTimer = setInterval(() => runAction(action), action === "down" ? 65 : 110);
+    }, 180);
+  };
+  pad.addEventListener("touchstart", startHold, { passive: false });
+  pad.addEventListener("touchend", stopHold, { passive: false });
+  pad.addEventListener("touchcancel", stopHold, { passive: false });
+  setScore("\u5206\u6570 0");
+  setMessage("\u5de6\u53f3\u79fb\u52a8\u65b9\u5757\uff0c\u53f3\u4fa7\u6309\u94ae\u7528\u4e8e\u65cb\u8f6c\u548c\u52a0\u901f\u4e0b\u843d\u3002");
+  draw();
+  scheduleDrop();
+  cleanup = () => {
+    clearTimeout(dropTimer);
+    stopHold();
+    pad.removeEventListener("touchstart", startHold);
+    pad.removeEventListener("touchend", stopHold);
+    pad.removeEventListener("touchcancel", stopHold);
+    pad.remove();
+  };
+}
+
+function runPoker() {
+  const suits = ["\u2660", "\u2665", "\u2663", "\u2666"];
+  const labels = { 11: "J", 12: "Q", 13: "K", 14: "A", 15: "2", 16: "\u5c0f\u738b", 17: "\u5927\u738b" };
+  const rankLabel = (rank) => labels[rank] || String(rank);
+  const deck = [];
+  for (let rank = 3; rank <= 15; rank++) suits.forEach((suit) => deck.push({ rank, suit, id: `${rank}-${suit}` }));
+  deck.push({ rank: 16, suit: "", id: "joker-small" }, { rank: 17, suit: "", id: "joker-big" });
+  const cards = shuffle(deck);
+  const hands = [cards.slice(0, 17), cards.slice(17, 34), cards.slice(34, 51)];
+  const landlordCards = cards.slice(51);
+  const sortHand = (hand) => hand.sort((a, b) => a.rank - b.rank || a.suit.localeCompare(b.suit));
+  hands.forEach(sortHand);
+  let phase = "bid";
+  let landlord = null;
+  let turn = 0;
+  let lastPlay = null;
+  let passes = 0;
+  let multiplier = 1;
+  let selected = new Set();
+  let aiTimer = null;
+  let lastTouch = 0;
+  let running = true;
+
+  const table = document.createElement("div");
+  table.className = "poker-table";
+  const aiTop = document.createElement("div");
+  aiTop.className = "poker-ai poker-ai-top";
+  const aiSide = document.createElement("div");
+  aiSide.className = "poker-ai poker-ai-side";
+  const center = document.createElement("div");
+  center.className = "poker-center";
+  const handEl = document.createElement("div");
+  handEl.className = "poker-hand";
+  const actions = document.createElement("div");
+  actions.className = "poker-actions";
+  table.append(aiTop, aiSide, center);
+  gameArea.append(table);
+  document.body.append(actions, handEl);
+
+  const countsFor = (playCards) => {
+    const counts = new Map();
+    playCards.forEach((card) => counts.set(card.rank, (counts.get(card.rank) || 0) + 1));
+    return [...counts.entries()].sort((a, b) => a[0] - b[0]);
+  };
+  const consecutive = (ranks) => ranks.every((rank, index) => index === 0 || rank === ranks[index - 1] + 1);
+  const classify = (playCards) => {
+    const sorted = [...playCards].sort((a, b) => a.rank - b.rank);
+    const counts = countsFor(sorted);
+    const ranks = counts.map(([rank]) => rank);
+    const byCount = (amount) => counts.filter(([, count]) => count === amount).map(([rank]) => rank);
+    if (sorted.length === 2 && ranks.length === 2 && ranks[0] === 16 && ranks[1] === 17) return { type: "rocket", power: 99, length: 2 };
+    if (sorted.length === 4 && counts.length === 1) return { type: "bomb", power: ranks[0], length: 4 };
+    if (sorted.length === 1) return { type: "single", power: ranks[0], length: 1 };
+    if (sorted.length === 2 && counts.length === 1) return { type: "pair", power: ranks[0], length: 2 };
+    if (sorted.length === 3 && counts.length === 1) return { type: "triple", power: ranks[0], length: 3 };
+    if (sorted.length === 4 && byCount(3).length === 1 && byCount(1).length === 1) return { type: "tripleSingle", power: byCount(3)[0], length: 4 };
+    if (sorted.length === 5 && byCount(3).length === 1 && byCount(2).length === 1) return { type: "triplePair", power: byCount(3)[0], length: 5 };
+    if (sorted.length === 6 && byCount(4).length === 1) return { type: "fourTwoSingles", power: byCount(4)[0], length: 6 };
+    if (sorted.length === 8 && byCount(4).length === 1 && byCount(2).length === 2) return { type: "fourTwoPairs", power: byCount(4)[0], length: 8 };
+    if (sorted.length >= 5 && counts.every(([, count]) => count === 1) && ranks[ranks.length - 1] < 15 && consecutive(ranks)) return { type: "straight", power: ranks[ranks.length - 1], length: sorted.length };
+    if (sorted.length >= 6 && sorted.length % 2 === 0 && counts.every(([, count]) => count === 2) && ranks[ranks.length - 1] < 15 && consecutive(ranks)) return { type: "pairStraight", power: ranks[ranks.length - 1], length: sorted.length };
+    if (sorted.length >= 6 && sorted.length % 3 === 0 && counts.every(([, count]) => count === 3) && ranks[ranks.length - 1] < 15 && consecutive(ranks)) return { type: "airplane", power: ranks[ranks.length - 1], length: sorted.length };
+    const tripleRanks = ranks.filter((rank) => rank < 15 && (counts.find(([value]) => value === rank)[1] >= 3));
+    for (let start = 0; start < tripleRanks.length; start++) {
+      for (let end = start + 1; end < tripleRanks.length; end++) {
+        const run = tripleRanks.slice(start, end + 1);
+        if (!consecutive(run)) break;
+        const wings = sorted.filter((card) => !run.includes(card.rank));
+        if (wings.length === run.length && sorted.length === run.length * 4) return { type: "airplaneSingles", power: run[run.length - 1], length: sorted.length };
+        const wingCounts = countsFor(wings);
+        if (wings.length === run.length * 2 && wingCounts.length === run.length && wingCounts.every(([, count]) => count === 2)) return { type: "airplanePairs", power: run[run.length - 1], length: sorted.length };
+      }
+    }
+    return null;
+  };
+  const beats = (play, previous) => {
+    if (!play) return false;
+    if (!previous) return true;
+    if (play.type === "rocket") return true;
+    if (previous.type === "rocket") return false;
+    if (play.type === "bomb" && previous.type !== "bomb") return true;
+    return play.type === previous.type && play.length === previous.length && play.power > previous.power;
+  };
+  const groups = (hand) => {
+    const map = new Map();
+    hand.forEach((card) => {
+      if (!map.has(card.rank)) map.set(card.rank, []);
+      map.get(card.rank).push(card);
+    });
+    return map;
+  };
+  const candidatesFor = (hand) => {
+    const map = groups(hand);
+    const ranks = [...map.keys()].sort((a, b) => a - b);
+    const result = [];
+    const add = (cardsToAdd) => {
+      const type = classify(cardsToAdd);
+      if (type) result.push({ cards: cardsToAdd, type });
+    };
+    const combinations = (items, amount) => {
+      if (amount === 0) return [[]];
+      const output = [];
+      items.forEach((item, index) => {
+        combinations(items.slice(index + 1), amount - 1).forEach((rest) => output.push([item, ...rest]));
+      });
+      return output;
+    };
+    ranks.forEach((rank) => {
+      const group = map.get(rank);
+      add([group[0]]);
+      if (group.length >= 2) add(group.slice(0, 2));
+      if (group.length >= 3) {
+        add(group.slice(0, 3));
+        const single = ranks.find((other) => other !== rank);
+        if (single !== undefined) add([...group.slice(0, 3), map.get(single)[0]]);
+        const pair = ranks.find((other) => other !== rank && map.get(other).length >= 2);
+        if (pair !== undefined) add([...group.slice(0, 3), ...map.get(pair).slice(0, 2)]);
+      }
+      if (group.length === 4) {
+        add(group.slice(0, 4));
+        const rest = hand.filter((card) => card.rank !== rank);
+        combinations(rest, 2).forEach((wings) => add([...group, ...wings]));
+        const pairs = ranks.filter((other) => other !== rank && map.get(other).length >= 2);
+        combinations(pairs, 2).forEach((pairRanks) => add([...group, ...pairRanks.flatMap((value) => map.get(value).slice(0, 2))]));
+      }
+    });
+    if (map.has(16) && map.has(17)) add([map.get(16)[0], map.get(17)[0]]);
+    const addRuns = (amount, minRanks) => {
+      const eligible = ranks.filter((rank) => rank < 15 && map.get(rank).length >= amount);
+      for (let start = 0; start < eligible.length; start++) {
+        for (let end = start + minRanks - 1; end < eligible.length; end++) {
+          const run = eligible.slice(start, end + 1);
+          if (!consecutive(run)) break;
+          add(run.flatMap((rank) => map.get(rank).slice(0, amount)));
+        }
+      }
+    };
+    addRuns(1, 5);
+    addRuns(2, 3);
+    addRuns(3, 2);
+    const tripleRanks = ranks.filter((rank) => rank < 15 && map.get(rank).length >= 3);
+    for (let start = 0; start < tripleRanks.length; start++) {
+      for (let end = start + 1; end < tripleRanks.length; end++) {
+        const run = tripleRanks.slice(start, end + 1);
+        if (!consecutive(run)) break;
+        const core = run.flatMap((rank) => map.get(rank).slice(0, 3));
+        const rest = hand.filter((card) => !run.includes(card.rank));
+        combinations(rest, run.length).forEach((wings) => add([...core, ...wings]));
+        const pairs = ranks.filter((rank) => !run.includes(rank) && map.get(rank).length >= 2);
+        combinations(pairs, run.length).forEach((pairRanks) => add([...core, ...pairRanks.flatMap((rank) => map.get(rank).slice(0, 2))]));
+      }
+    }
+    return result.sort((a, b) => a.cards.length - b.cards.length || a.type.power - b.type.power);
+  };
+  const legalCandidates = (hand) => candidatesFor(hand).filter((play) => beats(play.type, lastPlay && lastPlay.type));
+  const renderCard = (card, selectable = false) => {
+    const red = card.suit === "\u2665" || card.suit === "\u2666";
+    return `<button class="poker-card ${red ? "red" : ""} ${selected.has(card.id) ? "selected" : ""}" type="button" ${selectable ? `data-card="${card.id}"` : "disabled"}>
+      <strong>${rankLabel(card.rank)}</strong><span>${card.suit}</span>
+    </button>`;
+  };
+  const renderBacks = (count) => Array.from({ length: Math.min(count, 14) }, () => '<span class="poker-ai-card"></span>').join("");
+  const render = () => {
+    aiTop.innerHTML = `<strong>\u4e0a\u5bb6 ${hands[1].length} \u5f20${landlord === 1 ? " \u00b7 \u5730\u4e3b" : ""}</strong><div>${renderBacks(hands[1].length)}</div>`;
+    aiSide.innerHTML = `<strong>\u4e0b\u5bb6 ${hands[2].length} \u5f20${landlord === 2 ? " \u00b7 \u5730\u4e3b" : ""}</strong><div>${renderBacks(hands[2].length)}</div>`;
+    const last = lastPlay ? lastPlay.cards.map((card) => renderCard(card)).join("") : "<em>\u7b49\u5f85\u51fa\u724c</em>";
+    center.innerHTML = `
+      <div class="poker-meta">\u500d\u7387 ${multiplier}x ${landlord === null ? "" : `\u00b7 ${landlord === 0 ? "\u4f60" : landlord === 1 ? "\u4e0a\u5bb6" : "\u4e0b\u5bb6"}\u662f\u5730\u4e3b`}</div>
+      <div class="poker-landlord">\u5730\u4e3b\u724c\uff1a${landlordCards.map((card) => renderCard(card)).join("")}</div>
+      <div class="poker-last"><span>\u4e0a\u4e00\u624b</span><div>${last}</div></div>`;
+    handEl.innerHTML = hands[0].map((card) => renderCard(card, phase === "play" && turn === 0)).join("");
+    if (phase === "bid") {
+      actions.innerHTML = '<button class="primary-button" type="button" data-poker-action="bid">\u53eb\u5730\u4e3b</button><button class="primary-button" type="button" data-poker-action="skip-bid">\u4e0d\u53eb</button>';
+    } else {
+      actions.innerHTML = `<button class="primary-button" type="button" data-poker-action="play" ${selected.size ? "" : "disabled"}>\u51fa\u724c</button>
+        <button class="primary-button" type="button" data-poker-action="pass" ${!lastPlay || lastPlay.player === 0 ? "disabled" : ""}>\u4e0d\u51fa</button>
+        <button class="primary-button" type="button" data-poker-action="hint">\u63d0\u793a</button>`;
+    }
+  };
+  const finish = (winner) => {
+    running = false;
+    clearTimeout(aiTimer);
+    const playerWon = winner === 0;
+    recordResult(playerWon ? 100 * multiplier : 0, playerWon ? "\u4f60\u51fa\u5b8c\u4e86\u624b\u724c\uff0c\u83b7\u5f97\u80dc\u5229" : "\u7535\u8111\u5148\u51fa\u5b8c\u4e86\u624b\u724c");
+  };
+  const nextTurn = () => {
+    turn = (turn + 1) % 3;
+    render();
+    if (running && turn !== 0) scheduleAi();
+  };
+  const playCards = (player, play) => {
+    hands[player] = hands[player].filter((card) => !play.cards.some((used) => used.id === card.id));
+    if (play.type.type === "bomb" || play.type.type === "rocket") multiplier *= 2;
+    lastPlay = { ...play, player };
+    passes = 0;
+    if (!hands[player].length) {
+      render();
+      finish(player);
+      return;
+    }
+    nextTurn();
+  };
+  const pass = () => {
+    passes++;
+    if (passes >= 2) {
+      lastPlay = null;
+      passes = 0;
+    }
+    nextTurn();
+  };
+  const aiPlay = () => {
+    if (!running || phase !== "play" || turn === 0) return;
+    const options = legalCandidates(hands[turn]);
+    const level = settings.poker.level;
+    const shouldPass = lastPlay && options.length && Math.random() < (level === "easy" ? 0.42 : level === "normal" ? 0.2 : 0.08);
+    if (!options.length || shouldPass) pass();
+    else {
+      const play = level === "hard" ? options[0] : options[rand(Math.min(options.length, level === "easy" ? options.length : 3))];
+      playCards(turn, play);
+    }
+  };
+  function scheduleAi() {
+    clearTimeout(aiTimer);
+    setMessage(turn === 1 ? "\u4e0a\u5bb6\u601d\u8003\u4e2d\u2026" : "\u4e0b\u5bb6\u601d\u8003\u4e2d\u2026");
+    aiTimer = setTimeout(aiPlay, 650);
+  }
+  const startPlay = (chosenLandlord) => {
+    landlord = chosenLandlord;
+    hands[landlord].push(...landlordCards);
+    sortHand(hands[landlord]);
+    phase = "play";
+    turn = landlord;
+    selected.clear();
+    setMessage(landlord === 0 ? "\u4f60\u662f\u5730\u4e3b\uff0c\u8bf7\u5148\u51fa\u724c\u3002" : "\u7535\u8111\u53eb\u5230\u4e86\u5730\u4e3b\u3002");
+    render();
+    if (turn !== 0) scheduleAi();
+  };
+  const handleAction = (event) => {
+    event.preventDefault();
+    const button = event.target.closest("[data-poker-action]");
+    if (!button || button.disabled || !running) return;
+    const action = button.dataset.pokerAction;
+    if (action === "bid") return startPlay(0);
+    if (action === "skip-bid") return startPlay(Math.random() < 0.5 ? 1 : 2);
+    if (turn !== 0) return;
+    if (action === "pass") return pass();
+    const hint = legalCandidates(hands[0])[0];
+    if (action === "hint") {
+      selected = new Set(hint ? hint.cards.map((card) => card.id) : []);
+      setMessage(hint ? "\u5df2\u9009\u4e2d\u4e00\u7ec4\u53ef\u51fa\u7684\u724c\u3002" : "\u6682\u65f6\u6ca1\u6709\u53ef\u4ee5\u538b\u8fc7\u4e0a\u5bb6\u7684\u724c\u3002");
+      return render();
+    }
+    if (action === "play") {
+      const chosen = hands[0].filter((card) => selected.has(card.id));
+      const type = classify(chosen);
+      if (!beats(type, lastPlay && lastPlay.type)) {
+        setMessage("\u8fd9\u7ec4\u724c\u4e0d\u7b26\u5408\u89c4\u5219\uff0c\u8bf7\u91cd\u65b0\u9009\u62e9\u3002");
+        return;
+      }
+      selected.clear();
+      playCards(0, { cards: chosen, type });
+    }
+  };
+  const toggleCard = (event) => {
+    event.preventDefault();
+    const button = event.target.closest("[data-card]");
+    if (!button || turn !== 0 || phase !== "play") return;
+    if (selected.has(button.dataset.card)) selected.delete(button.dataset.card);
+    else selected.add(button.dataset.card);
+    render();
+  };
+  const touchAction = (event) => {
+    lastTouch = Date.now();
+    handleAction(event);
+  };
+  const clickAction = (event) => {
+    if (Date.now() - lastTouch > 500) handleAction(event);
+  };
+  const touchCard = (event) => {
+    lastTouch = Date.now();
+    toggleCard(event);
+  };
+  const clickCard = (event) => {
+    if (Date.now() - lastTouch > 500) toggleCard(event);
+  };
+  actions.addEventListener("touchstart", touchAction, { passive: false });
+  actions.addEventListener("click", clickAction);
+  handEl.addEventListener("touchstart", touchCard, { passive: false });
+  handEl.addEventListener("click", clickCard);
+  handEl.addEventListener("touchmove", (event) => event.preventDefault(), { passive: false });
+  setScore("\u7b49\u5f85\u53eb\u5730\u4e3b");
+  setMessage("\u8bf7\u9009\u62e9\u662f\u5426\u53eb\u5730\u4e3b\u3002");
+  render();
+  cleanup = () => {
+    clearTimeout(aiTimer);
+    actions.remove();
+    handEl.remove();
+  };
+}
+
 const gameRunners = {
   mines: runMines,
   gomoku: runGomoku,
@@ -940,6 +1562,9 @@ const gameRunners = {
   memory: runMemory,
   pong: runPong,
   breakout: runBreakout,
+  snake: runSnake,
+  tetris: runTetris,
+  poker: runPoker,
 };
 
 renderMenu();
