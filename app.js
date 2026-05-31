@@ -144,7 +144,7 @@ function bindKey(handler) {
 }
 
 function badge(char = character(), className = "player-symbol") {
-  return `<span class="${className}" style="background:${char.color};box-shadow:inset 0 -3px 0 ${char.accent}"><img class="face" src="${char.img}" alt="${char.name}" style="width:min(100%, 100%);height:auto;aspect-ratio:1 / 1;object-fit:contain;display:block;max-width:85%;max-height:85%" onerror="this.style.display='none'"></span>`;
+  return `<span class="${className}" style="background:${char.color};box-shadow:inset 0 -3px 0 ${char.accent}"><img class="face" src="${char.img}" alt="${char.name}" style="width:min(100%, 100%);height:auto;aspect-ratio:1 / 1;object-fit:contain;display:block;max-width:96%;max-height:96%" onerror="this.style.display='none'"></span>`;
 }
 
 function renderCharacters() {

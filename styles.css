@@ -757,7 +757,10 @@ body {
 .drawer {
   width: 100vw;
   padding: 76px 12px 14px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   transform: translateY(-105%);
 }
 
@@ -1362,18 +1365,17 @@ body {
 }
 
 .game-mode[data-game="snake"] .game-area {
-  align-content: start;
+  align-content: stretch;
   justify-items: center;
   gap: 8px;
   padding: 8px;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .snake-board {
   gap: 3px;
   max-width: calc(100vw - 20px);
-  max-height: calc(100dvh - 430px - env(safe-area-inset-bottom));
-  overflow: auto;
+  overflow: visible;
   touch-action: none;
 }
 
@@ -1415,7 +1417,7 @@ body {
   grid-template-columns: repeat(3, 46px);
   grid-template-rows: repeat(3, 46px);
   gap: 4px;
-  margin: 2px auto 0;
+  margin: auto auto 0;
   touch-action: none;
 }
 
@@ -1490,7 +1492,7 @@ body {
   position: fixed;
   z-index: 45;
   right: 16px;
-  bottom: max(16px, env(safe-area-inset-bottom));
+  bottom: max(34px, calc(env(safe-area-inset-bottom) + 18px));
   left: 16px;
   display: flex;
   align-items: center;
@@ -1557,7 +1559,7 @@ body {
 }
 
 .poker-ai-side {
-  top: 74px;
+  top: 8px;
   right: 8px;
   width: 48px;
 }
@@ -1649,7 +1651,7 @@ body {
   position: fixed;
   z-index: 43;
   right: 10px;
-  bottom: max(16px, env(safe-area-inset-bottom));
+  bottom: max(38px, calc(env(safe-area-inset-bottom) + 22px));
   left: 10px;
   display: grid;
   grid-template-columns: repeat(10, minmax(0, 38px));
@@ -1738,7 +1740,7 @@ body {
   position: fixed;
   z-index: 44;
   right: 8px;
-  bottom: calc(max(16px, env(safe-area-inset-bottom)) + 130px);
+  bottom: calc(max(38px, calc(env(safe-area-inset-bottom) + 22px)) + 126px);
   left: 8px;
   display: flex;
   flex-wrap: wrap;
