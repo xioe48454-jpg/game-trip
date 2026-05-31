@@ -983,7 +983,10 @@ function runSnake() {
     });
     snake.slice(1).forEach((part) => cells[indexOf(part)].classList.add("dark"));
     cells[indexOf(snake[0])].innerHTML = badge(char, "player-symbol");
-    if (food) cells[indexOf(food)].innerHTML = badge(foodChar, "food-symbol");
+    if (food) {
+      cells[indexOf(food)].classList.add("food-cell");
+      cells[indexOf(food)].innerHTML = badge(foodChar, "food-symbol");
+    }
     setScore(`\u5206\u6570 ${score}`);
   };
   const finish = (text) => {
@@ -1026,7 +1029,7 @@ function runSnake() {
     <button type="button" data-direction="down" aria-label="\u5411\u4e0b">\u2193</button>
     <button type="button" data-direction="right" aria-label="\u5411\u53f3">\u2192</button>
   `;
-  document.body.append(pad);
+  gameArea.append(pad);
   const directions = {
     up: { x: 0, y: -1 },
     down: { x: 0, y: 1 },
@@ -1053,12 +1056,12 @@ function runSnake() {
 }
 
 function runTetris() {
-  const ctx = canvasGame(640, 760);
+  const ctx = canvasGame(400, 760);
   const cols = 10;
   const rows = 20;
-  const cellSize = 32;
-  const offsetX = 160;
-  const offsetY = 60;
+  const cellSize = 36;
+  const offsetX = 20;
+  const offsetY = 20;
   const baseSpeed = Math.max(0.5, Math.min(3, settings.tetris.speed));
   const char = character();
   const shapes = {
@@ -1281,6 +1284,7 @@ function runPoker() {
   let playerDescending = false;
   let playerHasPlayed = false;
   let running = true;
+  const playHistory = [[], [], []];
 
   const table = document.createElement("div");
   table.className = "poker-table";
@@ -1416,18 +1420,29 @@ function runPoker() {
   const legalCandidates = (hand) => candidatesFor(hand).filter((play) => beats(play.type, lastPlay && lastPlay.type));
   const renderCard = (card, selectable = false) => {
     const red = card.suit === "\u2665" || card.suit === "\u2666";
-    return `<button class="poker-card ${red ? "red" : ""} ${selected.has(card.id) ? "selected" : ""}" type="button" ${selectable ? `data-card="${card.id}"` : "disabled"}>
-      <strong>${rankLabel(card.rank)}</strong><span>${card.suit}</span>
+    const joker = card.rank >= 16;
+    const jokerChar = card.rank === 17 ? characters.find((item) => item.id === "kuromi") : characters.find((item) => item.id === "melody");
+    const face = joker ? `<span class="poker-joker-mark">${card.rank === 17 ? "\u5927" : "\u5c0f"}</span><img class="poker-joker-face" src="${jokerChar.img}" alt="${rankLabel(card.rank)}" onerror="this.style.display='none'">` : `<strong>${rankLabel(card.rank)}</strong><span>${card.suit}</span>`;
+    return `<button class="poker-card ${red ? "red" : ""} ${joker ? "joker" : ""} ${card.rank === 17 ? "joker-big" : ""} ${selected.has(card.id) ? "selected" : ""}" type="button" ${selectable ? `data-card="${card.id}"` : "disabled"}>
+      ${face}
     </button>`;
   };
   const renderBacks = (count) => Array.from({ length: Math.min(count, 14) }, () => '<span class="poker-ai-card"></span>').join("");
+  const renderHistory = (player) => {
+    const cardsPlayed = playHistory[player].slice(-12);
+    if (!cardsPlayed.length) return "";
+    return `<div class="poker-history">${cardsPlayed.map((card) => {
+      const red = card.suit === "\u2665" || card.suit === "\u2666";
+      return `<span class="${red ? "red" : ""}">${rankLabel(card.rank)}${card.suit}</span>`;
+    }).join("")}</div>`;
+  };
   const render = () => {
-    aiTop.innerHTML = `<strong>\u4e0a\u5bb6 ${hands[1].length} \u5f20${landlord === 1 ? " \u00b7 \u5730\u4e3b" : ""}</strong><div>${renderBacks(hands[1].length)}</div>`;
-    aiSide.innerHTML = `<strong>\u4e0b\u5bb6 ${hands[2].length} \u5f20${landlord === 2 ? " \u00b7 \u5730\u4e3b" : ""}</strong><div>${renderBacks(hands[2].length)}</div>`;
+    aiTop.innerHTML = `<strong>\u4e0a\u5bb6 ${hands[1].length} \u5f20${landlord === 1 ? " \u00b7 \u5730\u4e3b" : ""}</strong><div>${renderBacks(hands[1].length)}</div>${renderHistory(1)}`;
+    aiSide.innerHTML = `<strong>\u4e0b\u5bb6 ${hands[2].length} \u5f20${landlord === 2 ? " \u00b7 \u5730\u4e3b" : ""}</strong><div>${renderBacks(hands[2].length)}</div>${renderHistory(2)}`;
     const last = lastPlay ? lastPlay.cards.map((card) => renderCard(card)).join("") : "<em>\u7b49\u5f85\u51fa\u724c</em>";
     center.innerHTML = `
       <div class="poker-meta">\u500d\u7387 ${multiplier}x ${landlord === null ? "" : `\u00b7 ${landlord === 0 ? "\u4f60" : landlord === 1 ? "\u4e0a\u5bb6" : "\u4e0b\u5bb6"}\u662f\u5730\u4e3b`}</div>
-      <div class="poker-landlord">\u5730\u4e3b\u724c\uff1a${landlordCards.map((card) => renderCard(card)).join("")}</div>
+      <div class="poker-landlord"><span>\u5730\u4e3b\u724c\uff1a</span><div class="poker-card-row">${landlordCards.map((card) => renderCard(card)).join("")}</div></div>
       <div class="poker-last"><span>\u4e0a\u4e00\u624b</span><div>${last}</div></div>`;
     handEl.innerHTML = hands[0].map((card) => renderCard(card, phase === "play" && turn === 0)).join("");
     const sortButton = playerHasPlayed ? "" : `<button class="primary-button poker-sort-button" type="button" data-poker-action="sort">\u6574\u7406\uff1a${playerDescending ? "\u5927\u2192\u5c0f" : "\u5c0f\u2192\u5927"}</button>`;
@@ -1452,6 +1467,7 @@ function runPoker() {
   };
   const playCards = (player, play) => {
     hands[player] = hands[player].filter((card) => !play.cards.some((used) => used.id === card.id));
+    playHistory[player].push(...play.cards);
     if (player === 0) playerHasPlayed = true;
     if (play.type.type === "bomb" || play.type.type === "rocket") multiplier *= 2;
     lastPlay = { ...play, player };

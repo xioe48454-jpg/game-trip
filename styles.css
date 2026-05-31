@@ -1363,14 +1363,16 @@ body {
 
 .game-mode[data-game="snake"] .game-area {
   align-content: start;
-  padding: 8px 8px calc(212px + env(safe-area-inset-bottom));
+  justify-items: center;
+  gap: 8px;
+  padding: 8px;
   overflow: auto;
 }
 
 .snake-board {
   gap: 3px;
   max-width: calc(100vw - 20px);
-  max-height: calc(100dvh - 390px - env(safe-area-inset-bottom));
+  max-height: calc(100dvh - 430px - env(safe-area-inset-bottom));
   overflow: auto;
   touch-action: none;
 }
@@ -1387,29 +1389,46 @@ body {
   height: 85%;
 }
 
+.snake-board .food-cell {
+  outline: 3px solid var(--pink-dark);
+  background: #fff0a8;
+  animation: food-pulse 800ms ease-in-out infinite alternate;
+}
+
+.snake-board .food-symbol {
+  width: 100%;
+  height: 100%;
+}
+
+.snake-board .food-symbol .face {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+@keyframes food-pulse {
+  from { transform: scale(0.96); }
+  to { transform: scale(1.05); }
+}
+
 .snake-pad {
-  position: fixed;
-  z-index: 45;
-  left: 50%;
-  bottom: max(16px, env(safe-area-inset-bottom));
   display: grid;
-  grid-template-columns: repeat(3, 60px);
-  grid-template-rows: repeat(3, 60px);
-  gap: 8px;
-  transform: translateX(-50%);
+  grid-template-columns: repeat(3, 46px);
+  grid-template-rows: repeat(3, 46px);
+  gap: 4px;
+  margin: 2px auto 0;
   touch-action: none;
 }
 
 .snake-pad button {
   display: grid;
   place-items: center;
-  width: 60px;
-  height: 60px;
+  width: 46px;
+  height: 46px;
   border: 3px solid white;
-  border-radius: 18px;
+  border-radius: 14px;
   background: rgba(255, 125, 183, 0.96);
   color: white;
-  font-size: 28px;
+  font-size: 23px;
   font-weight: 900;
   box-shadow: var(--shadow);
   cursor: pointer;
@@ -1458,8 +1477,13 @@ body {
   height: auto;
   max-width: 100%;
   max-height: calc(100dvh - 315px - env(safe-area-inset-bottom));
-  aspect-ratio: 640 / 760;
+  aspect-ratio: 400 / 760;
   border-radius: 18px;
+}
+
+.menu-mode .snake-pad,
+.menu-mode .tetris-pad {
+  display: none;
 }
 
 .tetris-pad {
@@ -1503,15 +1527,15 @@ body {
 
 .game-mode[data-game="poker"] .game-area {
   align-content: start;
-  padding: 6px 8px 188px;
+  padding: 6px 8px 238px;
   overflow: hidden;
 }
 
 .poker-table {
   position: relative;
   width: min(100%, 620px);
-  height: min(48vh, 390px);
-  min-height: 280px;
+  height: min(39vh, 318px);
+  min-height: 230px;
   border: 3px solid white;
   border-radius: 18px;
   background: rgba(255, 228, 242, 0.8);
@@ -1533,7 +1557,7 @@ body {
 }
 
 .poker-ai-side {
-  top: 92px;
+  top: 74px;
   right: 8px;
   width: 48px;
 }
@@ -1543,6 +1567,32 @@ body {
   flex-wrap: wrap;
   gap: 2px;
   margin-top: 4px;
+}
+
+.poker-history {
+  display: flex;
+  max-width: 160px;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 5px;
+}
+
+.poker-history span {
+  display: inline-flex;
+  min-width: 22px;
+  min-height: 18px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border-radius: 4px;
+  background: white;
+  color: #343044;
+  font-size: 10px;
+  box-shadow: 0 2px 0 rgba(232, 87, 155, 0.14);
+}
+
+.poker-history span.red {
+  color: #df3f62;
 }
 
 .poker-ai-card {
@@ -1589,18 +1639,34 @@ body {
   font-size: 11px;
 }
 
+.poker-card-row,
+.poker-last > div {
+  display: flex;
+  justify-content: center;
+}
+
 .poker-hand {
   position: fixed;
   z-index: 43;
   right: 10px;
   bottom: max(16px, env(safe-area-inset-bottom));
   left: 10px;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 38px));
+  grid-auto-rows: 55px;
+  align-content: end;
   justify-content: center;
-  min-height: 76px;
-  padding: 14px 8px 0;
+  min-height: 116px;
+  padding: 12px 4px 0;
   overflow-x: visible;
   touch-action: manipulation;
+}
+
+.poker-hand .poker-card {
+  width: 38px;
+  height: 54px;
+  margin-left: 0;
+  font-size: 12px;
 }
 
 .poker-card {
@@ -1631,6 +1697,32 @@ body {
   color: #df3f62;
 }
 
+.poker-card.joker {
+  position: relative;
+  overflow: hidden;
+  background: #fff7fb;
+}
+
+.poker-card.joker-big {
+  background: #f2edff;
+}
+
+.poker-joker-mark {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  color: var(--pink-dark);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.poker-joker-face {
+  display: block;
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+}
+
 .poker-card.selected {
   z-index: 2;
   border-color: var(--pink-dark);
@@ -1646,7 +1738,7 @@ body {
   position: fixed;
   z-index: 44;
   right: 8px;
-  bottom: calc(max(16px, env(safe-area-inset-bottom)) + 90px);
+  bottom: calc(max(16px, env(safe-area-inset-bottom)) + 130px);
   left: 8px;
   display: flex;
   flex-wrap: wrap;
