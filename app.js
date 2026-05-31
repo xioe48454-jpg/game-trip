@@ -52,7 +52,6 @@ const games = [
   { id: "memory", name: "\u8bb0\u5fc6\u7ffb\u724c", tag: "\u8bb0\u5fc6", icon: "\u5361", help: "\u4e00\u6b21\u7ffb\u4e24\u5f20\uff0c\u914d\u5bf9\u6240\u6709\u89d2\u8272\u5361\u3002" },
   { id: "pong", name: "\u4e52\u4e53\u7403", tag: "\u7403\u573a", icon: "\u62cd", help: "\u62d6\u52a8\u4e0b\u65b9\u7403\u62cd\uff0c\u548c\u5bf9\u9762\u7684\u4e09\u4e3d\u9e25\u89d2\u8272\u6253\u4e52\u4e53\u7403\u3002" },
   { id: "breakout", name: "\u6253\u7816\u5757", tag: "\u8857\u673a", icon: "\u7816", help: "\u79fb\u52a8\u7403\u62cd\u53cd\u5f39\u89d2\u8272\u7403\uff0c\u6e05\u6389\u793c\u7269\u7816\u5757\u3002" },
-  { id: "mole", name: "\u6253\u5730\u9f20", tag: "\u901f\u5ea6", icon: "\u6d1e", help: "\u9650\u65f6\u70b9\u51fb\u51fa\u73b0\u7684\u89d2\u8272\uff0c\u53ef\u8c03\u6574\u5751\u6570\u63a7\u5236\u96be\u5ea6\u3002" },
 ];
 
 const defaults = {
@@ -62,7 +61,6 @@ const defaults = {
   memory: { pairs: 8, peek: 0 },
   pong: { speed: 1.2, rival: "melody" },
   breakout: { rows: 5, speed: 1.15 },
-  mole: { time: 30, speed: 800, holes: 9 },
 };
 
 games.forEach((game) => {
@@ -157,11 +155,7 @@ function renderMenu() {
       <span class="menu-name">${game.name}</span>
       <span class="menu-tag">${game.tag}</span>
     </button>
-  `).join("") + `
-    <div class="menu-scene menu-scene-stable" aria-hidden="true">
-      ${characters.slice(0, 6).map((char) => `<img src="${char.img}" alt="">`).join("")}
-    </div>
-  `;
+  `).join("");
 }
 
 function numberField(label, key, min, max, step = 1) {
@@ -192,7 +186,6 @@ function renderDifficulty() {
     memory: () => numberField("\u5bf9\u5b50", "pairs", 4, 18) + selectField("\u9884\u89c8", "peek", [[0, "\u5173\u95ed"], [2, "2 \u79d2"], [4, "4 \u79d2"]]),
     pong: () => rangeField("\u901f\u5ea6", "speed", 0.8, 3, 0.2) + characterSelectField("\u5bf9\u624b", "rival"),
     breakout: () => numberField("\u884c\u6570", "rows", 3, 8) + rangeField("\u901f\u5ea6", "speed", 0.8, 2.5, 0.1),
-    mole: () => numberField("\u79d2\u6570", "time", 15, 60) + numberField("\u5751\u6570", "holes", 9, 36) + selectField("\u901f\u5ea6", "speed", [[1000, "\u8f7b\u677e"], [700, "\u666e\u901a"], [460, "\u5feb"], [320, "\u75af\u72c2"]]),
   };
   difficultyPanel.innerHTML = panels[id]();
 }
@@ -1028,7 +1021,6 @@ const gameRunners = {
   memory: runMemory,
   pong: runPong,
   breakout: runBreakout,
-  mole: runMole,
 };
 
 renderMenu();

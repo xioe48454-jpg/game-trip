@@ -81,7 +81,9 @@ select {
   width: min(330px, 88vw);
   padding: 82px 18px 20px;
   overflow: auto;
-  background: rgba(255, 246, 252, 0.96);
+  background:
+    linear-gradient(rgba(255, 246, 252, 0.82), rgba(255, 246, 252, 0.9)),
+    url("./sanliou.jpg") center / cover no-repeat;
   border-right: 2px solid white;
   box-shadow: var(--shadow);
   transform: translateX(-105%);
