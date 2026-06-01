@@ -12,25 +12,26 @@ function getAudioContext() {
 function playSound(type) {
   try {
     const configs = {
-      flip:    { freq: [440, 440],       dur: 0.08,  wave: "sine",     vol: 0.18 },
-      flag:    { freq: [600, 900],       dur: 0.12,  wave: "sine",     vol: 0.15 },
-      boom:    { freq: [190, 130, 90],   dur: 0.28,  wave: "sine",     vol: 0.15 },
-      place:   { freq: [800, 800],       dur: 0.06,  wave: "sine",     vol: 0.20 },
-      win:     { freq: [500, 700, 900],  dur: 0.28,  wave: "sine",     vol: 0.22 },
-      lose:    { freq: [400, 250],       dur: 0.30,  wave: "sawtooth", vol: 0.20 },
-      celebrate: { freq: [520, 720, 920, 1180], dur: 0.42, wave: "triangle", vol: 0.20 },
-      gomokuWin:  { freq: [460, 620, 780], dur: 0.26, wave: "sine", vol: 0.18 },
-      gomokuLose: { freq: [360, 300, 240], dur: 0.24, wave: "sine", vol: 0.14 },
+      flip:    { freq: [460, 520],       dur: 0.16,  wave: "sine",     vol: 0.24, voices: 2 },
+      flag:    { freq: [560, 720],       dur: 0.16,  wave: "sine",     vol: 0.20, voices: 2 },
+      boom:    { freq: [180, 145, 115],  dur: 0.34,  wave: "sine",     vol: 0.20, voices: 2 },
+      place:   { freq: [620, 680],       dur: 0.10,  wave: "sine",     vol: 0.22, voices: 2 },
+      win:     { freq: [440, 560, 680],  dur: 0.42,  wave: "sine",     vol: 0.22, voices: 2 },
+      lose:    { freq: [330, 285, 245],  dur: 0.42,  wave: "sine",     vol: 0.18, voices: 2 },
+      celebrate: { freq: [440, 560, 680, 820], dur: 0.54, wave: "sine", vol: 0.22, voices: 2 },
+      gomokuWin:  { freq: [420, 540, 660], dur: 0.40, wave: "sine", vol: 0.20, voices: 2 },
+      gomokuLose: { freq: [320, 280, 240], dur: 0.40, wave: "sine", vol: 0.17, voices: 2 },
       merge:   { freq: [520, 780],       dur: 0.10,  wave: "sine",     vol: 0.16 },
       swipe:   { freq: [300, 200],       dur: 0.08,  wave: "triangle", vol: 0.10 },
-      pong:    { freq: [680, 460],       dur: 0.055, wave: "triangle", vol: 0.11 },
-      brick:   { freq: [760, 980],       dur: 0.065, wave: "triangle", vol: 0.15 },
-      memory:  { freq: [600, 800],       dur: 0.16,  wave: "sine",     vol: 0.18 },
-      memoryWin: { freq: [520, 720, 920, 1120], dur: 0.38, wave: "sine", vol: 0.30 },
+      pong:    { freq: [580, 420],       dur: 0.11,  wave: "sine",     vol: 0.18, voices: 2 },
+      brick:   { freq: [620, 780],       dur: 0.14,  wave: "triangle", vol: 0.24, voices: 2 },
+      memory:  { freq: [540, 680],       dur: 0.22,  wave: "sine",     vol: 0.24, voices: 2 },
+      memoryWin: { freq: [440, 560, 680, 820], dur: 0.56, wave: "sine", vol: 0.24, voices: 2 },
       card:    { freq: [440, 560],       dur: 0.08,  wave: "sine",     vol: 0.14 },
       tetris:  { freq: [260, 260],       dur: 0.07,  wave: "square",   vol: 0.14 },
-      clear:   { freq: [400, 600, 800, 1000], dur: 0.32, wave: "sine", vol: 0.22 },
-      snakeLose: { freq: [300, 250, 210], dur: 0.26, wave: "sine", vol: 0.11 },
+      clear:   { freq: [400, 520, 640, 760], dur: 0.48, wave: "sine", vol: 0.22, voices: 2 },
+      snakeEat:  { freq: [420, 560], dur: 0.18, wave: "sine", vol: 0.24, voices: 2 },
+      snakeLose: { freq: [280, 245, 215], dur: 0.42, wave: "sine", vol: 0.17, voices: 2 },
     };
 
     const c = configs[type];
@@ -38,18 +39,23 @@ function playSound(type) {
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = c.wave;
+    const compressor = ctx.createDynamicsCompressor();
+    gain.connect(compressor);
+    compressor.connect(ctx.destination);
     const freqs = c.freq;
     const step = c.dur / freqs.length;
-    freqs.forEach((f, i) => osc.frequency.setValueAtTime(f, now + i * step));
     gain.gain.setValueAtTime(Math.min(c.vol * soundVolumeBoost, 0.95), now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + c.dur);
-    osc.start(now);
-    osc.stop(now + c.dur + 0.05);
+    Array.from({ length: c.voices || 1 }, (_, voice) => {
+      const osc = ctx.createOscillator();
+      osc.connect(gain);
+      osc.type = c.wave;
+      osc.detune.value = voice ? 8 : -8;
+      freqs.forEach((f, i) => osc.frequency.setValueAtTime(f, now + i * step));
+      osc.start(now);
+      osc.stop(now + c.dur + 0.05);
+    });
   } catch (e) {}
 }
 
@@ -1104,7 +1110,7 @@ function runSnake() {
     snake.unshift(head);
     if (grows) {
       score += Math.round(10 * baseSpeed);
-      playSound("flip");
+      playSound("snakeEat");
       placeFood();
       if (!food) {
         draw();
