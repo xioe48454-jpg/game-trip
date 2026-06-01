@@ -971,7 +971,7 @@ function runSnake() {
     })).filter((point) => !snake.some((part) => samePoint(part, point)));
     food = empty.length ? empty[rand(empty.length)] : null;
   };
-  const interval = () => Math.max(72, Math.round(310 / (baseSpeed + score / 120)));
+  const interval = () => Math.max(110, Math.round(520 / (baseSpeed + score / 180)));
   const schedule = () => {
     clearTimeout(timer);
     if (running) timer = setTimeout(tick, interval());

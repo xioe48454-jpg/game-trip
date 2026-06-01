@@ -1414,23 +1414,23 @@ body {
 
 .snake-pad {
   display: grid;
-  grid-template-columns: repeat(3, 46px);
-  grid-template-rows: repeat(3, 46px);
-  gap: 4px;
-  margin: auto auto 0;
+  grid-template-columns: repeat(3, 42px);
+  grid-template-rows: repeat(3, 42px);
+  gap: 2px;
+  margin: auto auto -8px;
   touch-action: none;
 }
 
 .snake-pad button {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
   border: 3px solid white;
-  border-radius: 14px;
+  border-radius: 13px;
   background: rgba(255, 125, 183, 0.96);
   color: white;
-  font-size: 23px;
+  font-size: 21px;
   font-weight: 900;
   box-shadow: var(--shadow);
   cursor: pointer;
@@ -1475,10 +1475,10 @@ body {
 
 .game-mode[data-game="tetris"] canvas {
   display: block;
-  width: auto;
+  width: min(82vw, 460px);
   height: auto;
   max-width: 100%;
-  max-height: calc(100dvh - 315px - env(safe-area-inset-bottom));
+  max-height: calc(100dvh - 278px - env(safe-area-inset-bottom));
   aspect-ratio: 400 / 760;
   border-radius: 18px;
 }
@@ -1572,11 +1572,19 @@ body {
 }
 
 .poker-history {
-  display: flex;
-  max-width: 160px;
-  flex-wrap: wrap;
+  display: grid !important;
   gap: 2px;
   margin-top: 5px;
+}
+
+.poker-ai-top .poker-history {
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  width: min(250px, 70vw);
+}
+
+.poker-ai-side .poker-history {
+  grid-template-columns: repeat(2, 24px);
+  width: 48px;
 }
 
 .poker-history span {
@@ -1651,7 +1659,7 @@ body {
   position: fixed;
   z-index: 43;
   right: 10px;
-  bottom: max(38px, calc(env(safe-area-inset-bottom) + 22px));
+  bottom: max(82px, calc(env(safe-area-inset-bottom) + 66px));
   left: 10px;
   display: grid;
   grid-template-columns: repeat(10, minmax(0, 38px));
@@ -1740,7 +1748,7 @@ body {
   position: fixed;
   z-index: 44;
   right: 8px;
-  bottom: calc(max(38px, calc(env(safe-area-inset-bottom) + 22px)) + 126px);
+  bottom: calc(max(82px, calc(env(safe-area-inset-bottom) + 66px)) + 124px);
   left: 8px;
   display: flex;
   flex-wrap: wrap;
