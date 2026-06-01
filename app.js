@@ -1,3 +1,42 @@
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const configs = {
+      flip:    { freq: [440, 440],       dur: 0.08,  wave: "sine",     vol: 0.18 },
+      flag:    { freq: [600, 900],       dur: 0.12,  wave: "sine",     vol: 0.15 },
+      boom:    { freq: [120, 40],        dur: 0.35,  wave: "sawtooth", vol: 0.28 },
+      place:   { freq: [800, 800],       dur: 0.06,  wave: "sine",     vol: 0.20 },
+      win:     { freq: [500, 700, 900],  dur: 0.28,  wave: "sine",     vol: 0.22 },
+      lose:    { freq: [400, 250],       dur: 0.30,  wave: "sawtooth", vol: 0.20 },
+      merge:   { freq: [520, 780],       dur: 0.10,  wave: "sine",     vol: 0.16 },
+      swipe:   { freq: [300, 200],       dur: 0.08,  wave: "triangle", vol: 0.10 },
+      pong:    { freq: [320, 320],       dur: 0.05,  wave: "square",   vol: 0.15 },
+      brick:   { freq: [1000, 1200],     dur: 0.07,  wave: "sine",     vol: 0.18 },
+      memory:  { freq: [600, 800],       dur: 0.16,  wave: "sine",     vol: 0.18 },
+      card:    { freq: [440, 560],       dur: 0.08,  wave: "sine",     vol: 0.14 },
+      tetris:  { freq: [260, 260],       dur: 0.07,  wave: "square",   vol: 0.14 },
+      clear:   { freq: [400, 600, 800, 1000], dur: 0.32, wave: "sine", vol: 0.22 },
+    };
+
+    const c = configs[type];
+    if (!c) return;
+    osc.type = c.wave;
+    const freqs = c.freq;
+    const step = c.dur / freqs.length;
+    freqs.forEach((f, i) => osc.frequency.setValueAtTime(f, now + i * step));
+    gain.gain.setValueAtTime(c.vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + c.dur);
+    osc.start(now);
+    osc.stop(now + c.dur + 0.05);
+  } catch (e) {}
+}
+
 const gameArea = document.querySelector("#gameArea");
 const menu = document.querySelector("#gameMenu");
 const title = document.querySelector("#gameTitle");
@@ -328,10 +367,12 @@ function runMines() {
       if (revealed.has(index)) return;
       if (flagged.has(index)) {
         flagged.delete(index);
+        playSound("flag");
         cell.classList.remove("flagged");
         cell.innerHTML = "";
       } else {
         flagged.add(index);
+        playSound("flag");
         cell.classList.add("flagged");
         cell.innerHTML = '<span class="cute-flag" aria-label="\u6807\u8bb0\u6709\u96f7">\ud83c\udf80</span>';
         hint.hidden = true;
@@ -341,6 +382,7 @@ function runMines() {
     const reveal = () => {
       if (revealed.has(index) || flagged.has(index)) return;
       if (mines.has(index)) {
+        playSound("boom");
         cell.innerHTML = badge(char, "mine-symbol");
         cell.classList.add("hit");
         setMessage("踩中角色雷了，按重开换一局。");
@@ -376,8 +418,12 @@ function runMines() {
         }
       };
       revealFrom(index);
+      playSound("flip");
       updateRemainingMines();
-      if (revealed.size === total - mineCount) recordResult(revealed.size, "清空成功");
+      if (revealed.size === total - mineCount) {
+        playSound("win");
+        recordResult(revealed.size, "清空成功");
+      }
     };
     cell.addEventListener("click", () => {
       if (revealed.has(index)) return;
@@ -508,11 +554,14 @@ function runGomoku() {
     over = true;
     setMessage(text);
     line.forEach((index) => cells[index].classList.add("hit"));
-    recordResult(text.includes(player.name) ? 100 : 0, text);
+    const playerWon = text.includes(player.name);
+    playSound(playerWon ? "win" : "lose");
+    recordResult(playerWon ? 100 : 0, text);
   };
 
   const place = (index, mark, char) => {
     state[index] = mark;
+    playSound("place");
     cells[index].innerHTML = badge(char);
     cells[index].classList.add("revealed");
     const line = winningLine(index % size, Math.floor(index / size), mark);
@@ -590,7 +639,10 @@ function run2048() {
     });
     const max = Math.max(...grid);
     setScore(`最大 ${max}`);
-    if (max >= Number(settings.game2048.goal)) recordResult(max, `达到 ${settings.game2048.goal}`);
+    if (max >= Number(settings.game2048.goal)) {
+      playSound("win");
+      recordResult(max, `达到 ${settings.game2048.goal}`);
+    }
     const hasEmpty = grid.some((value) => !value);
     const hasMerge = grid.some((value, index) => {
       const row = Math.floor(index / 4);
@@ -599,6 +651,7 @@ function run2048() {
     });
     if (!over && !hasEmpty && !hasMerge) {
       over = true;
+      playSound("lose");
       recordResult(max, "\u65e0\u6cd5\u7ee7\u7eed\u5408\u5e76\uff0c\u672c\u5c40\u7ed3\u675f");
     }
   };
@@ -669,6 +722,8 @@ function run2048() {
     }
     if (grid.join() !== before) {
       addTile();
+      playSound("swipe");
+      if (mergedTargets.size) playSound("merge");
       draw(mergedTargets);
       animateSlides(slides);
       showTrail(key);
@@ -719,6 +774,7 @@ function runMemory() {
     cell.type = "button";
     cell.style.width = cell.style.height = `${cardSize}px`;
     const reveal = () => {
+      playSound("flip");
       cell.innerHTML = badge(char, "memory-symbol");
       cell.classList.add("revealed");
     };
@@ -734,9 +790,13 @@ function runMemory() {
         moves++;
         setScore(`步数 ${moves}`);
         if (open[0].char.id === open[1].char.id) {
+          playSound("memory");
           matched += 2;
           open = [];
-          if (matched === deck.length) recordResult(Math.max(1, 200 - moves), "全部配对完成");
+          if (matched === deck.length) {
+            playSound("win");
+            recordResult(Math.max(1, 200 - moves), "全部配对完成");
+          }
         } else {
           setTimeout(() => {
             open.forEach((item) => item.hide());
@@ -845,20 +905,24 @@ function runPong() {
     if (ball.x < 48 || ball.x > 592) ball.vx *= -1;
     if (ball.y < 120 && ball.x > rivalX && ball.x < rivalX + 116 && ball.vy < 0) {
       ball.vy *= -1;
+      playSound("pong");
       ball.vx += (ball.x - (rivalX + 58)) * 0.035;
     }
     if (ball.y > 646 && ball.x > playerX && ball.x < playerX + 116 && ball.vy > 0) {
       ball.vy *= -1.04;
+      playSound("pong");
       ball.vx += (ball.x - (playerX + 58)) * 0.035;
       score++;
       setScore("\u56de\u5408 " + score);
     }
     if (ball.y < 28) {
       running = false;
+      playSound("win");
       recordResult(score + 20, "\u8d62\u4e0b\u56de\u5408");
     }
     if (ball.y > 740) {
       running = false;
+      playSound("lose");
       recordResult(score, "\u56de\u5408\u7ed3\u675f");
     }
     draw();
@@ -905,6 +969,7 @@ function runBreakout() {
     bricks.forEach((brick) => {
       if (brick.alive && ball.x > brick.x && ball.x < brick.x + 58 && ball.y > brick.y && ball.y < brick.y + 20) {
         brick.alive = false;
+        playSound("brick");
         ball.vy *= -1;
         score += 5;
         setScore(`分数 ${score}`);
@@ -912,11 +977,13 @@ function runBreakout() {
     });
     if (!bricks.some((brick) => brick.alive)) {
       setMessage("礼物砖块清空。");
+      playSound("win");
       recordResult(score, "礼物砖块清空");
       clearInterval(timer);
     }
     if (ball.y > 770) {
       setMessage("球掉出去了，按重开再来。");
+      playSound("lose");
       recordResult(score, "球掉出去了");
       clearInterval(timer);
     }
@@ -1002,12 +1069,14 @@ function runSnake() {
     const bodyToCheck = grows ? snake : snake.slice(0, -1);
     const hitSelf = bodyToCheck.some((part) => samePoint(part, head));
     if (hitWall || hitSelf) {
+      playSound("lose");
       finish("\u78b0\u5230\u969c\u788d\uff0c\u672c\u5c40\u7ed3\u675f");
       return;
     }
     snake.unshift(head);
     if (grows) {
       score += Math.round(10 * baseSpeed);
+      playSound("flip");
       placeFood();
       if (!food) {
         draw();
@@ -1151,6 +1220,7 @@ function runTetris() {
     clearTimeout(dropTimer);
     clearTimeout(holdTimer);
     clearInterval(repeatTimer);
+    playSound("lose");
     recordResult(score, "\u65b9\u5757\u5806\u5230\u9876\u90e8\uff0c\u672c\u5c40\u7ed3\u675f");
   };
   const clearLines = () => {
@@ -1164,12 +1234,14 @@ function runTetris() {
       }
     }
     if (!cleared) return;
+    playSound("clear");
     lines += cleared;
     score += cleared * 100 + Math.max(0, cleared - 1) * 50;
     setScore(`\u5206\u6570 ${score}`);
     setMessage(`\u6d88\u9664 ${cleared} \u884c\uff0c\u7d2f\u8ba1 ${lines} \u884c\u3002`);
   };
   const lockPiece = () => {
+    playSound("tetris");
     eachBlock(piece, (x, y) => {
       if (y >= 0) grid[y][x] = 1;
     });
@@ -1183,7 +1255,10 @@ function runTetris() {
   const move = (dx) => {
     if (!running) return;
     const candidate = { ...piece, x: piece.x + dx };
-    if (!collides(candidate)) piece = candidate;
+    if (!collides(candidate)) {
+      piece = candidate;
+      playSound("tetris");
+    }
     draw();
   };
   const rotate = () => {
@@ -1191,7 +1266,10 @@ function runTetris() {
     const rotated = rotateShape(piece.shape);
     const kicks = [0, -1, 1, -2, 2];
     const next = kicks.map((kick) => ({ ...piece, x: piece.x + kick, shape: rotated })).find((candidate) => !collides(candidate));
-    if (next) piece = next;
+    if (next) {
+      piece = next;
+      playSound("tetris");
+    }
     draw();
   };
   function stepDown() {
@@ -1458,6 +1536,7 @@ function runPoker() {
     running = false;
     clearTimeout(aiTimer);
     const playerWon = winner === 0;
+    playSound(playerWon ? "win" : "lose");
     recordResult(playerWon ? 100 * multiplier : 0, playerWon ? "\u4f60\u51fa\u5b8c\u4e86\u624b\u724c\uff0c\u83b7\u5f97\u80dc\u5229" : "\u7535\u8111\u5148\u51fa\u5b8c\u4e86\u624b\u724c");
   };
   const nextTurn = () => {
@@ -1469,8 +1548,12 @@ function runPoker() {
     hands[player] = hands[player].filter((card) => !play.cards.some((used) => used.id === card.id));
     playHistory[player].push(...play.cards);
     if (player === 0) playerHasPlayed = true;
-    if (play.type.type === "bomb" || play.type.type === "rocket") multiplier *= 2;
+    if (play.type.type === "bomb" || play.type.type === "rocket") {
+      multiplier *= 2;
+      playSound("win");
+    }
     lastPlay = { ...play, player };
+    playSound("card");
     passes = 0;
     if (!hands[player].length) {
       render();
@@ -1505,6 +1588,7 @@ function runPoker() {
   }
   const startPlay = (chosenLandlord) => {
     landlord = chosenLandlord;
+    if (chosenLandlord === 0) playSound("place");
     hands[landlord].push(...landlordCards);
     sortHand(hands[landlord], landlord === 0 && playerDescending);
     phase = "play";
