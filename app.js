@@ -1,5 +1,5 @@
 let audioContext = null;
-const soundVolumeBoost = 1.35;
+const soundVolumeBoost = 2.2;
 
 function getAudioContext() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -46,7 +46,7 @@ function playSound(type) {
     const freqs = c.freq;
     const step = c.dur / freqs.length;
     freqs.forEach((f, i) => osc.frequency.setValueAtTime(f, now + i * step));
-    gain.gain.setValueAtTime(Math.min(c.vol * soundVolumeBoost, 0.42), now);
+    gain.gain.setValueAtTime(Math.min(c.vol * soundVolumeBoost, 0.68), now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + c.dur);
     osc.start(now);
     osc.stop(now + c.dur + 0.05);
@@ -1144,10 +1144,9 @@ function runSnake() {
     if (reverse || same || turnQueue.length >= 2) return;
     turnQueue.push(selected);
     nextDirection = selected;
-    schedule(55);
+    schedule(24);
   };
   pad.addEventListener("pointerdown", steer);
-  pad.addEventListener("touchstart", steer, { passive: false });
   placeFood();
   draw();
   setMessage("\u7528\u5e95\u90e8\u65b9\u5411\u952e\u63a7\u5236\u89d2\u8272\uff0c\u5403\u6389\u98df\u7269\u83b7\u5f97\u5206\u6570\u3002");
@@ -1155,7 +1154,6 @@ function runSnake() {
   cleanup = () => {
     clearTimeout(timer);
     pad.removeEventListener("pointerdown", steer);
-    pad.removeEventListener("touchstart", steer);
     pad.remove();
   };
 }
