@@ -1,31 +1,41 @@
+let audioContext = null;
+
 function playSound(type) {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const configs = {
+      flip:    { freq: [440, 440],       dur: 0.08,  wave: "sine",     vol: 0.18 },
+      flag:    { freq: [600, 900],       dur: 0.12,  wave: "sine",     vol: 0.15 },
+      boom:    { freq: [190, 130, 90],   dur: 0.28,  wave: "sine",     vol: 0.15 },
+      place:   { freq: [800, 800],       dur: 0.06,  wave: "sine",     vol: 0.20 },
+      win:     { freq: [500, 700, 900],  dur: 0.28,  wave: "sine",     vol: 0.22 },
+      lose:    { freq: [400, 250],       dur: 0.30,  wave: "sawtooth", vol: 0.20 },
+      celebrate: { freq: [520, 720, 920, 1180], dur: 0.42, wave: "triangle", vol: 0.20 },
+      gomokuWin:  { freq: [460, 620, 780], dur: 0.26, wave: "sine", vol: 0.18 },
+      gomokuLose: { freq: [360, 300, 240], dur: 0.24, wave: "sine", vol: 0.14 },
+      merge:   { freq: [520, 780],       dur: 0.10,  wave: "sine",     vol: 0.16 },
+      swipe:   { freq: [300, 200],       dur: 0.08,  wave: "triangle", vol: 0.10 },
+      pong:    { freq: [680, 460],       dur: 0.055, wave: "triangle", vol: 0.11 },
+      brick:   { freq: [760, 980],       dur: 0.065, wave: "triangle", vol: 0.15 },
+      memory:  { freq: [600, 800],       dur: 0.16,  wave: "sine",     vol: 0.18 },
+      memoryWin: { freq: [520, 720, 920, 1120], dur: 0.38, wave: "sine", vol: 0.30 },
+      card:    { freq: [440, 560],       dur: 0.08,  wave: "sine",     vol: 0.14 },
+      tetris:  { freq: [260, 260],       dur: 0.07,  wave: "square",   vol: 0.14 },
+      clear:   { freq: [400, 600, 800, 1000], dur: 0.32, wave: "sine", vol: 0.22 },
+      snakeMusic: { freq: [392, 494, 587], dur: 0.32, wave: "triangle", vol: 0.055 },
+    };
+
+    const c = configs[type];
+    if (!c) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    if (!audioContext || audioContext.state === "closed") audioContext = new AudioContext();
+    if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+    const ctx = audioContext;
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
-
-    const configs = {
-      flip:    { freq: [440, 440],       dur: 0.08,  wave: "sine",     vol: 0.18 },
-      flag:    { freq: [600, 900],       dur: 0.12,  wave: "sine",     vol: 0.15 },
-      boom:    { freq: [120, 40],        dur: 0.35,  wave: "sawtooth", vol: 0.28 },
-      place:   { freq: [800, 800],       dur: 0.06,  wave: "sine",     vol: 0.20 },
-      win:     { freq: [500, 700, 900],  dur: 0.28,  wave: "sine",     vol: 0.22 },
-      lose:    { freq: [400, 250],       dur: 0.30,  wave: "sawtooth", vol: 0.20 },
-      merge:   { freq: [520, 780],       dur: 0.10,  wave: "sine",     vol: 0.16 },
-      swipe:   { freq: [300, 200],       dur: 0.08,  wave: "triangle", vol: 0.10 },
-      pong:    { freq: [320, 320],       dur: 0.05,  wave: "square",   vol: 0.15 },
-      brick:   { freq: [1000, 1200],     dur: 0.07,  wave: "sine",     vol: 0.18 },
-      memory:  { freq: [600, 800],       dur: 0.16,  wave: "sine",     vol: 0.18 },
-      card:    { freq: [440, 560],       dur: 0.08,  wave: "sine",     vol: 0.14 },
-      tetris:  { freq: [260, 260],       dur: 0.07,  wave: "square",   vol: 0.14 },
-      clear:   { freq: [400, 600, 800, 1000], dur: 0.32, wave: "sine", vol: 0.22 },
-    };
-
-    const c = configs[type];
-    if (!c) return;
     osc.type = c.wave;
     const freqs = c.freq;
     const step = c.dur / freqs.length;
@@ -36,6 +46,13 @@ function playSound(type) {
     osc.stop(now + c.dur + 0.05);
   } catch (e) {}
 }
+
+function unlockAudio() {
+  if (audioContext && audioContext.state === "suspended") audioContext.resume().catch(() => {});
+}
+
+document.addEventListener("pointerdown", unlockAudio, { passive: true });
+document.addEventListener("touchstart", unlockAudio, { passive: true });
 
 const gameArea = document.querySelector("#gameArea");
 const menu = document.querySelector("#gameMenu");
@@ -421,7 +438,7 @@ function runMines() {
       playSound("flip");
       updateRemainingMines();
       if (revealed.size === total - mineCount) {
-        playSound("win");
+        playSound("celebrate");
         recordResult(revealed.size, "清空成功");
       }
     };
@@ -555,7 +572,7 @@ function runGomoku() {
     setMessage(text);
     line.forEach((index) => cells[index].classList.add("hit"));
     const playerWon = text.includes(player.name);
-    playSound(playerWon ? "win" : "lose");
+    playSound(playerWon ? "gomokuWin" : "gomokuLose");
     recordResult(playerWon ? 100 : 0, text);
   };
 
@@ -794,7 +811,7 @@ function runMemory() {
           matched += 2;
           open = [];
           if (matched === deck.length) {
-            playSound("win");
+            playSound("memoryWin");
             recordResult(Math.max(1, 200 - moves), "全部配对完成");
           }
         } else {
@@ -965,7 +982,10 @@ function runBreakout() {
     ball.y += ball.vy;
     if (ball.x < 12 || ball.x > 628) ball.vx *= -1;
     if (ball.y < 12) ball.vy *= -1;
-    if (ball.y > 690 && ball.x > paddle && ball.x < paddle + 104 && ball.vy > 0) ball.vy *= -1;
+    if (ball.y > 690 && ball.x > paddle && ball.x < paddle + 104 && ball.vy > 0) {
+      ball.vy *= -1;
+      playSound("pong");
+    }
     bricks.forEach((brick) => {
       if (brick.alive && ball.x > brick.x && ball.x < brick.x + 58 && ball.y > brick.y && ball.y < brick.y + 20) {
         brick.alive = false;
@@ -1028,6 +1048,7 @@ function runSnake() {
   let score = 0;
   let running = true;
   let timer = null;
+  let musicTimer = null;
 
   const indexOf = ({ x, y }) => y * size + x;
   const samePoint = (a, b) => a.x === b.x && a.y === b.y;
@@ -1059,6 +1080,7 @@ function runSnake() {
   const finish = (text) => {
     running = false;
     clearTimeout(timer);
+    clearInterval(musicTimer);
     recordResult(score, text);
   };
   function tick() {
@@ -1110,16 +1132,23 @@ function runSnake() {
     const button = event.target.closest("[data-direction]");
     if (!button || !running) return;
     const selected = directions[button.dataset.direction];
-    if (selected.x !== -direction.x || selected.y !== -direction.y) nextDirection = selected;
+    if (selected.x !== -nextDirection.x || selected.y !== -nextDirection.y) nextDirection = selected;
   };
   pad.addEventListener("pointerdown", steer);
+  pad.addEventListener("touchstart", steer, { passive: false });
   placeFood();
   draw();
   setMessage("\u7528\u5e95\u90e8\u65b9\u5411\u952e\u63a7\u5236\u89d2\u8272\uff0c\u5403\u6389\u98df\u7269\u83b7\u5f97\u5206\u6570\u3002");
+  playSound("snakeMusic");
+  musicTimer = setInterval(() => {
+    if (running) playSound("snakeMusic");
+  }, 760);
   schedule();
   cleanup = () => {
     clearTimeout(timer);
+    clearInterval(musicTimer);
     pad.removeEventListener("pointerdown", steer);
+    pad.removeEventListener("touchstart", steer);
     pad.remove();
   };
 }
@@ -1298,7 +1327,10 @@ function runTetris() {
     if (action === "left") move(-1);
     if (action === "right") move(1);
     if (action === "rotate") rotate();
-    if (action === "down") stepDown();
+    if (action === "down") {
+      playSound("tetris");
+      stepDown();
+    }
   };
   const stopHold = (event) => {
     if (event) event.preventDefault();
