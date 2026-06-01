@@ -1,5 +1,13 @@
 let audioContext = null;
 
+function getAudioContext() {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return null;
+  if (!audioContext || audioContext.state === "closed") audioContext = new AudioContext();
+  if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+  return audioContext;
+}
+
 function playSound(type) {
   try {
     const configs = {
@@ -21,16 +29,13 @@ function playSound(type) {
       card:    { freq: [440, 560],       dur: 0.08,  wave: "sine",     vol: 0.14 },
       tetris:  { freq: [260, 260],       dur: 0.07,  wave: "square",   vol: 0.14 },
       clear:   { freq: [400, 600, 800, 1000], dur: 0.32, wave: "sine", vol: 0.22 },
-      snakeMusic: { freq: [392, 494, 587], dur: 0.32, wave: "triangle", vol: 0.055 },
+      snakeLose: { freq: [300, 250, 210], dur: 0.26, wave: "sine", vol: 0.11 },
     };
 
     const c = configs[type];
     if (!c) return;
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    if (!audioContext || audioContext.state === "closed") audioContext = new AudioContext();
-    if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
-    const ctx = audioContext;
+    const ctx = getAudioContext();
+    if (!ctx) return;
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -45,6 +50,46 @@ function playSound(type) {
     osc.start(now);
     osc.stop(now + c.dur + 0.05);
   } catch (e) {}
+}
+
+function startSnakeMusic() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return () => {};
+    const lead = ctx.createOscillator();
+    const harmony = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const notes = [392, 440, 494, 523, 494, 440, 415, 440];
+    let noteIndex = 0;
+    lead.type = "sine";
+    harmony.type = "sine";
+    lead.frequency.value = notes[0];
+    harmony.frequency.value = notes[0] / 2;
+    gain.gain.value = 0.028;
+    lead.connect(gain);
+    harmony.connect(gain);
+    gain.connect(ctx.destination);
+    lead.start();
+    harmony.start();
+    const melodyTimer = setInterval(() => {
+      noteIndex = (noteIndex + 1) % notes.length;
+      const now = ctx.currentTime;
+      lead.frequency.setTargetAtTime(notes[noteIndex], now, 0.12);
+      harmony.frequency.setTargetAtTime(notes[noteIndex] / 2, now, 0.18);
+    }, 460);
+    let stopped = false;
+    return () => {
+      if (stopped) return;
+      stopped = true;
+      clearInterval(melodyTimer);
+      const now = ctx.currentTime;
+      gain.gain.setTargetAtTime(0.001, now, 0.06);
+      lead.stop(now + 0.28);
+      harmony.stop(now + 0.28);
+    };
+  } catch (e) {
+    return () => {};
+  }
 }
 
 function unlockAudio() {
@@ -1048,7 +1093,8 @@ function runSnake() {
   let score = 0;
   let running = true;
   let timer = null;
-  let musicTimer = null;
+  let stopMusic = () => {};
+  const turnQueue = [];
 
   const indexOf = ({ x, y }) => y * size + x;
   const samePoint = (a, b) => a.x === b.x && a.y === b.y;
@@ -1060,9 +1106,9 @@ function runSnake() {
     food = empty.length ? empty[rand(empty.length)] : null;
   };
   const interval = () => Math.max(110, Math.round(520 / (baseSpeed + score / 180)));
-  const schedule = () => {
+  const schedule = (delay = interval()) => {
     clearTimeout(timer);
-    if (running) timer = setTimeout(tick, interval());
+    if (running) timer = setTimeout(tick, delay);
   };
   const draw = () => {
     cells.forEach((cell) => {
@@ -1080,18 +1126,19 @@ function runSnake() {
   const finish = (text) => {
     running = false;
     clearTimeout(timer);
-    clearInterval(musicTimer);
+    stopMusic();
     recordResult(score, text);
   };
   function tick() {
-    direction = nextDirection;
+    direction = turnQueue.shift() || direction;
+    nextDirection = turnQueue.length ? turnQueue[turnQueue.length - 1] : direction;
     const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
     const hitWall = head.x < 0 || head.x >= size || head.y < 0 || head.y >= size;
     const grows = food && samePoint(head, food);
     const bodyToCheck = grows ? snake : snake.slice(0, -1);
     const hitSelf = bodyToCheck.some((part) => samePoint(part, head));
     if (hitWall || hitSelf) {
-      playSound("lose");
+      playSound("snakeLose");
       finish("\u78b0\u5230\u969c\u788d\uff0c\u672c\u5c40\u7ed3\u675f");
       return;
     }
@@ -1109,7 +1156,7 @@ function runSnake() {
       snake.pop();
     }
     draw();
-    schedule();
+    schedule(turnQueue.length ? 75 : interval());
   }
 
   const pad = document.createElement("div");
@@ -1132,21 +1179,24 @@ function runSnake() {
     const button = event.target.closest("[data-direction]");
     if (!button || !running) return;
     const selected = directions[button.dataset.direction];
-    if (selected.x !== -nextDirection.x || selected.y !== -nextDirection.y) nextDirection = selected;
+    const previous = turnQueue.length ? turnQueue[turnQueue.length - 1] : direction;
+    const reverse = selected.x === -previous.x && selected.y === -previous.y;
+    const same = selected.x === previous.x && selected.y === previous.y;
+    if (reverse || same || turnQueue.length >= 2) return;
+    turnQueue.push(selected);
+    nextDirection = selected;
+    schedule(55);
   };
   pad.addEventListener("pointerdown", steer);
   pad.addEventListener("touchstart", steer, { passive: false });
   placeFood();
   draw();
   setMessage("\u7528\u5e95\u90e8\u65b9\u5411\u952e\u63a7\u5236\u89d2\u8272\uff0c\u5403\u6389\u98df\u7269\u83b7\u5f97\u5206\u6570\u3002");
-  playSound("snakeMusic");
-  musicTimer = setInterval(() => {
-    if (running) playSound("snakeMusic");
-  }, 760);
+  stopMusic = startSnakeMusic();
   schedule();
   cleanup = () => {
     clearTimeout(timer);
-    clearInterval(musicTimer);
+    stopMusic();
     pad.removeEventListener("pointerdown", steer);
     pad.removeEventListener("touchstart", steer);
     pad.remove();
