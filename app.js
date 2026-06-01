@@ -1,4 +1,5 @@
 let audioContext = null;
+const soundVolumeBoost = 1.35;
 
 function getAudioContext() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -45,7 +46,7 @@ function playSound(type) {
     const freqs = c.freq;
     const step = c.dur / freqs.length;
     freqs.forEach((f, i) => osc.frequency.setValueAtTime(f, now + i * step));
-    gain.gain.setValueAtTime(c.vol, now);
+    gain.gain.setValueAtTime(Math.min(c.vol * soundVolumeBoost, 0.42), now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + c.dur);
     osc.start(now);
     osc.stop(now + c.dur + 0.05);
