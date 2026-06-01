@@ -52,46 +52,6 @@ function playSound(type) {
   } catch (e) {}
 }
 
-function startSnakeMusic() {
-  try {
-    const ctx = getAudioContext();
-    if (!ctx) return () => {};
-    const lead = ctx.createOscillator();
-    const harmony = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const notes = [392, 440, 494, 523, 494, 440, 415, 440];
-    let noteIndex = 0;
-    lead.type = "sine";
-    harmony.type = "sine";
-    lead.frequency.value = notes[0];
-    harmony.frequency.value = notes[0] / 2;
-    gain.gain.value = 0.028;
-    lead.connect(gain);
-    harmony.connect(gain);
-    gain.connect(ctx.destination);
-    lead.start();
-    harmony.start();
-    const melodyTimer = setInterval(() => {
-      noteIndex = (noteIndex + 1) % notes.length;
-      const now = ctx.currentTime;
-      lead.frequency.setTargetAtTime(notes[noteIndex], now, 0.12);
-      harmony.frequency.setTargetAtTime(notes[noteIndex] / 2, now, 0.18);
-    }, 460);
-    let stopped = false;
-    return () => {
-      if (stopped) return;
-      stopped = true;
-      clearInterval(melodyTimer);
-      const now = ctx.currentTime;
-      gain.gain.setTargetAtTime(0.001, now, 0.06);
-      lead.stop(now + 0.28);
-      harmony.stop(now + 0.28);
-    };
-  } catch (e) {
-    return () => {};
-  }
-}
-
 function unlockAudio() {
   if (audioContext && audioContext.state === "suspended") audioContext.resume().catch(() => {});
 }
@@ -1093,7 +1053,6 @@ function runSnake() {
   let score = 0;
   let running = true;
   let timer = null;
-  let stopMusic = () => {};
   const turnQueue = [];
 
   const indexOf = ({ x, y }) => y * size + x;
@@ -1126,7 +1085,6 @@ function runSnake() {
   const finish = (text) => {
     running = false;
     clearTimeout(timer);
-    stopMusic();
     recordResult(score, text);
   };
   function tick() {
@@ -1192,11 +1150,9 @@ function runSnake() {
   placeFood();
   draw();
   setMessage("\u7528\u5e95\u90e8\u65b9\u5411\u952e\u63a7\u5236\u89d2\u8272\uff0c\u5403\u6389\u98df\u7269\u83b7\u5f97\u5206\u6570\u3002");
-  stopMusic = startSnakeMusic();
   schedule();
   cleanup = () => {
     clearTimeout(timer);
-    stopMusic();
     pad.removeEventListener("pointerdown", steer);
     pad.removeEventListener("touchstart", steer);
     pad.remove();
